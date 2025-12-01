@@ -1,0 +1,3906 @@
+procedure TFC.KePupClick(Sender: TObject);
+var
+  p1, p2, p3, p4, p5, p6, pp6i, tempi: Integer;
+  j1, j2, j3, j4, j5, j6: Integer;
+  i00, i01, i02, i03, i04, i05, i06, i07, i08, i09: Integer;
+  PP6: array [1 .. 6] of Integer;
+  PPcode6: array [1 .. 6] of String;
+  RResult, pcode1, pcode2, temps: string;
+  pindex1, pindex2: Integer;
+  ok, notok: boolean;
+  Tcolor4pCode: array [0 .. 4] of string;
+
+  colorindex, orderStep, ijk, stept: Integer;
+  isHaveSameColor: boolean;
+  Tcolor5pCode: array [0 .. 5] of string; // Tcolor5pCode
+  PPcode5ColorIndex: array [0 .. 5] of Integer; // ColorIndex
+  Abacd_A, Abacd_b, Abacd_Aa, Abacd_c, Abacd_d: string; // Tcolor5pCode
+  a, b, aa, c, d: Integer; // PPcode5Index
+  // isTest5Chain: Integer; // 实例且改代码才可测五环肯普链涟漪
+  // isTest5ChainReturnOK: Integer; // 实例且改代码才可测五环肯普链涟漪
+  isOK: Integer;
+begin
+  // isTest5Chain := 1; // 实例且改代码才可测五环肯普链涟漪
+  // isTest5Chain := 0; // 实例且改代码才可测五环肯普链涟漪
+  exitOut := False;
+  // if RadioButton1.Checked then
+  //
+  // TRzButton(Sender).Tag := 1
+  // else
+  // TRzButton(Sender).Tag := 2;
+  // Image1.Picture.LoadFromFile(extractfilepath(paramstr(0)) + '反例.jpg');
+
+  RResult := '';
+
+  // N6Click(nil);
+
+  ADOQuery2.Close;
+  ADOQuery2.SQL.Text :=
+    'update points set CCC=0,F1=0,C=0,FC=0,C1248C1111=0 where  dprid=' +
+    dprid + ' ';
+  ADOQuery2.ExecSQL;
+
+  ADOQuery2.Close;
+  ADOQuery2.SQL.Text := 'select  count(1) as pc from points where 1=1 and F1=0 '
+    + ' and dprid=' + dprid + ' ';
+  ADOQuery2.Open;
+  PCount := ADOQuery2.FieldByName('pc').AsInteger;
+  /// ////测试五环用   隐去一点
+  if isTest5Chain = 1 then
+  // if 1 = 2 then
+  begin
+    PCount := PCount - 1;
+    adotemp.Close;
+    adotemp.SQL.Text :=
+      'update points set dprid=2 where pcode=''P0'' and dprid=' + dprid + ' ';
+    // 测试时P0正确是dprid=1，现暂动态改为2来测试
+    adotemp.ExecSQL;
+    adotemp.Close;
+    adotemp.SQL.Text :=
+      'update edges set relation=0 where pcode1=''P0'' and dprid=' + dprid +
+      ' '; // 测试时P0正确是dprid=1，现暂动态改为2来测试  ,仅五边P1,P2,P3,P4,P5
+    adotemp.ExecSQL;
+  end;
+  /// ////测试五环用
+  curPcount := PCount + 1;
+
+  while curPcount > 6 do
+  begin
+    curPcount := curPcount - 1;
+    if curPcount = 6 then
+    begin
+      ADOQuery2.Close;
+      ADOQuery2.SQL.Text := 'select  * from points where 1=1 and F1=0 ' +
+        ' and dprid=' + dprid + ' ';
+      ADOQuery2.Open;
+      ADOQuery2.First;
+      tempi := 0;
+      while not ADOQuery2.Eof do
+      begin
+        tempi := tempi + 1;
+        ADOQuery2.Edit;
+        ADOQuery2.FieldByName('F1').AsInteger := tempi;
+        ADOQuery2.Post;
+        ADOQuery2.Next;
+      end;
+      break;
+    end;
+
+    ADOQuery1.Close;
+    ADOQuery1.SQL.Text :=
+      'select ww.* from (select w.pcode1,count(1) as pc from (select pcode1,pcode2 from edges where Relation '
+      + ' and dprid=' + dprid +
+      ' and pcode1 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) +
+      ') and pcode2 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) + ')  ' +
+      ' union select pcode2,pcode1 from edges where relation and dprid=' + dprid
+      + ' and pcode1 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) +
+      ') and pcode2 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) + ')  ' +
+    // ' ) as w group by w.pcode1) as ww order by ww.pc';  notok  //测试四环，五环
+    // ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1';  //ookk
+    // ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1 desc';  //测试四环，五环
+      ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1'; // ookk
+    // ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1 desc';  //测试四环，五环
+    // 上面两句SQL有个order by ww.pcode1确不同，有者，可解那个双四环，无者，第二个不可解
+    // 无者，可用于测试五环乎，同样算法，因为一个order出现可解与不可解之大事
+    if isTest5ChainReturnOK = 1 then
+      /// /测试五环用   隐去一点
+      ADOQuery1.SQL.Text :=
+      /// /测试五环用   隐去一点
+        'select ww.* from (select w.pcode1,count(1) as pc from (select pcode1,pcode2 from edges where Relation '
+        + ' and dprid=' + dprid +
+        ' and pcode1 in (select pcode from points where  dprid=' + dprid +
+        'and F1<' + inttostr(curPcount) +
+        ') and pcode2 in (select pcode from points where  dprid=' + dprid +
+        'and F1<' + inttostr(curPcount) + ')  ' +
+        ' union select pcode2,pcode1 from edges where relation and dprid=' +
+        dprid + ' and pcode1 in (select pcode from points where  dprid=' + dprid
+        + 'and F1<' + inttostr(curPcount) +
+        ') and pcode2 in (select pcode from points where  dprid=' + dprid +
+        'and F1<' + inttostr(curPcount) + ')  ' +
+        ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1 desc';
+    // notok // 测试四环，五环
+
+    ADOQuery1.Open;
+    if ADOQuery1.FieldByName('pc').AsInteger > 5 then
+    begin
+      showmessage('数据有错了');
+
+    end;
+
+    ADOQuery2.Close;
+    ADOQuery2.SQL.Text := 'update points set F1=' + inttostr(curPcount) +
+      ',CCC=' + ADOQuery1.FieldByName('pc').AsString + ' where pcode=''' +
+      ADOQuery1.FieldByName('pcode1').AsString + ''' and dprid=' + dprid + ' ';
+    ADOQuery2.ExecSQL;
+    // exit;
+
+  end;
+  if curPcount = 6 then
+  // showmessage(inttostr(PCount));
+  begin
+    // 九重循环，九层之台，起于累土，千里之行，始于足下
+    ok := False;
+    notok := True;
+
+    ADOQuery1.Close;
+    ADOQuery1.SQL.Text :=
+      'select edges.*,(select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+      + dprid + ') as pF1, ' +
+      '  (select p.F1  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+      + dprid + ') as pF2 ' + ' from edges where Relation ' + ' and dprid=' +
+      dprid + ' ';
+    ADOQuery1.Open;
+
+    for p1 := 1 to 4 do
+    begin
+      for p2 := 1 to 4 do
+      begin
+        for p3 := 1 to 4 do
+        begin
+          for p4 := 1 to 4 do
+          begin
+            for p5 := 1 to 4 do
+            begin
+              for p6 := 1 to 4 do
+              begin
+                PP6[1] := p1;
+                PP6[2] := p2;
+                PP6[3] := p3;
+                PP6[4] := p4;
+                PP6[5] := p5;
+                PP6[6] := p6;
+                ok := True;
+                notok := True;
+                // ADOQuery1.Close;
+                // ADOQuery1.SQL.Text :=
+                // 'select edges.*,(select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                // + dprid + ') as pF1, ' +
+                // '  (select p.F1  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+                // + dprid + ') as pF2 ' + ' from edges where Relation ' +
+                // ' and dprid=' + dprid + ' ';
+                // ADOQuery1.Open;
+                ADOQuery1.First;
+                while not ADOQuery1.Eof do
+                begin
+                  // pcode1 := ADOQuery1.FieldByName('pF1').AsString;
+                  // pcode2 := ADOQuery1.FieldByName('pF2').AsString;
+                  pindex1 := ADOQuery1.FieldByName('pF1').AsInteger;
+                  pindex2 := ADOQuery1.FieldByName('pF2').AsInteger;
+                  if ((pindex1 > 0) and (pindex1 < 7)) then
+                    if ((pindex2 > 0) and (pindex2 < 7)) then
+                      if PP6[pindex1] = PP6[pindex2] then
+                      begin
+                        notok := True;
+                        ok := False;
+                        break;
+                      end;
+                  ADOQuery1.Next;
+                end;
+                if ok then
+                  for pp6i := 1 to 6 do
+                  begin
+
+                    ADOQuery2.Close;
+                    ADOQuery2.SQL.Text := 'update points set FC=' +
+                      inttostr(PP6[pp6i]) + ' where F1=' + inttostr(pp6i) +
+                      ' and dprid=' + dprid + ' ';
+                    ADOQuery2.ExecSQL;
+
+                  end;
+
+                if ok then
+                  break;
+              end;
+              if ok then
+                break;
+            end;
+            if ok then
+              break;
+          end;
+          if ok then
+            break;
+        end;
+        if ok then
+          break;
+      end;
+      if ok then
+        break;
+    end;
+  end;
+  refreshhClick(nil); // 刷新图中各点
+  if not ok then
+  begin
+    showmessage('此图肯定没有四色解');
+    exit;
+  end;
+  stept := trunc(stepTime.Value);
+  // 这里若要刷新开始六点颜值，写代码，不想写，用处不大乎
+  adotemp.Close;
+  adotemp.SQL.Text := 'select * from points  where F1<7 and dprid=' +
+    dprid + ' ';
+  adotemp.Open;
+  adotemp.First;
+  while not adotemp.Eof do
+  // for pp6i := 1 to 6 do
+  begin
+    // PPcode6[pp6i] := adotemp.FieldByName('pcode').AsString;
+    refreshoneP(adotemp.FieldByName('fc').AsString, adotemp.FieldByName('pcode')
+      .AsString, 0, clMoneyGreen);
+    adotemp.Next;
+  end;
+
+  if isTest5Chain = 1 then
+    /// ////测试五环用
+    PCount := PCount + 1;
+  while curPcount < (PCount + 1) do
+  // while curPcount < PCount do
+  begin
+    Application.ProcessMessages;
+    if exitOut then
+    begin
+      break;
+      Close;
+    end;
+    Application.ProcessMessages;
+    curPcount := curPcount + 1;
+    if isTest5Chain = 1 then
+      /// ////测试五环用
+      if (curPcount = (PCount)) then
+      begin
+        if 1 = 1 then
+        // if 1 = 2 then
+        begin
+          // curPcount := curPcount + 1;
+          adotemp.Close;
+          adotemp.SQL.Text :=
+            'update points set dprid=1,CCC=5,F1=118,FC=0,C1248C1111=0  where pcode=''P0'' and dprid=2';
+          // 测试时P0正确是dprid=1，现暂动态改为2来测试
+          adotemp.ExecSQL;
+          adotemp.Close;
+          adotemp.SQL.Text :=
+            'update edges set relation=1 where (ecode=''P0P1'' or ecode=''P0P2'' or ecode=''P0P3''  or  ecode=''P0P4''  or ecode=''P0P5'') and dprid='
+            + dprid + ' '; // 测试时P0正确是dprid=1，现暂动态改为2来测试  ,仅五边P1,P2,P3,P4,P5
+          adotemp.ExecSQL;
+
+        end;
+      end;
+    /// ////测试五环用
+
+    ADOQuery2.Close;
+    ADOQuery2.SQL.Text := 'select  * from points where 1=1 and F1= ' +
+      inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+    ADOQuery2.Open;
+    tempi := ADOQuery2.FieldByName('CCC').AsInteger;
+    if ADOQuery2.FieldByName('pcode').AsString = 'P96' then
+      Application.ProcessMessages; // 断点查错，果然不顺也
+    if tempi < 4 then
+    begin
+
+      ADOQuery1.Close;
+      ADOQuery1.SQL.Text :=
+        'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+        + dprid + ') as pFC1, ' +
+        '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+        + dprid + ') as pFC2 ' + ' from edges where Relation ' + ' and dprid=' +
+        dprid + ' and (pcode1=''' + ADOQuery2.FieldByName('pcode').AsString +
+        ''' or pcode2=''' + ADOQuery2.FieldByName('pcode').AsString + ''')';
+      temps := '1234';
+      ADOQuery1.Open;
+      ADOQuery1.First;
+      while not ADOQuery1.Eof do
+      begin
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC1').AsString, '');
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC2').AsString, '');
+        ADOQuery1.Next;
+      end;
+      if temps = '' then
+      begin
+        showmessage('小于4的，可能有错了');
+      end
+      else
+      begin
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set FC=' + temps[1] + ' where F1=' +
+          inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 1000);
+        refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 0,
+          clMoneyGreen);
+      end;
+    end;
+    if tempi = 4 then
+    begin
+      ADOQuery1.Close;
+      ADOQuery1.SQL.Text :=
+        'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+        + dprid + ') as pFC1, ' +
+        '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+        + dprid + ') as pFC2 ' + ' from edges where Relation ' + ' and dprid=' +
+        dprid + ' and (pcode1=''' + ADOQuery2.FieldByName('pcode').AsString +
+        ''' or pcode2=''' + ADOQuery2.FieldByName('pcode').AsString + ''')';
+      temps := '1234';
+      ADOQuery1.Open;
+      ADOQuery1.First;
+      while not ADOQuery1.Eof do
+      begin
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC1').AsString, '');
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC2').AsString, '');
+        ADOQuery1.Next;
+      end;
+      if temps = '' then
+      begin
+        // 4环肯普链树  必定1234  ,1243,1347,1324,1423,1432,每点变一次，不是仅变两次
+       //  showmessage('4环肯普链树');
+        isOK := 0;
+        // showmessage('4环肯普链树  必定1234');
+        // refreshhClick(nil); // 刷新图中各点
+        Tcolor4pCode[0] := ADOQuery2.FieldByName('pcode').AsString;
+        // refreshoneP(inttostr(0), Tcolor4pCode[0], 3000, clgreen);
+        refreshoneP(inttostr(0), Tcolor4pCode[0], 0, clOlive);
+        if (Tcolor4pCode[0] = 'P11') then
+          Application.ProcessMessages;
+        // ('P54', 'P55', 'P18', 'P17', 'P99')
+        // 终于自建了一个点线状数据测试了，可能不符合现实世界的片状地图。测试点线状地图，只为测试肯普链用，结果也不知有没解。
+        ADOQuery1.First;
+        while not ADOQuery1.Eof do
+        begin
+          for colorindex := 1 to 4 do
+          begin
+            if ADOQuery1.FieldByName('pFC1').AsInteger = colorindex then
+              Tcolor4pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode1').AsString;
+            if ADOQuery1.FieldByName('pFC2').AsInteger = colorindex then
+              Tcolor4pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode2').AsString;
+          end;
+          ADOQuery1.Next;
+        end; // 以上为Tcolor4pCode[i]赋值
+        // 数据正常下，不是普遍无规律的  14,3,4,13,42
+        isHaveSameColor := False;
+        // ('P95', 'P112', 'P51', 'P96', 'P94')最后一点P95
+        // C1248C1111 备份字段用也
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set C1248C1111=FC where  dprid=' +
+          dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(inttostr(1), Tcolor4pCode[1], 1000, clYellow);
+        // refreshoneP(inttostr(2), Tcolor4pCode[2], 1000, clblue);
+        // refreshoneP(inttostr(3), Tcolor4pCode[3], 1000, clLime);
+        // refreshoneP(inttostr(4), Tcolor4pCode[4], 1000, clFuchsia);
+        refreshoneP(inttostr(1), Tcolor4pCode[1], 0, cllime);
+        refreshoneP(inttostr(2), Tcolor4pCode[2], 0, clFuchsia);
+        refreshoneP(inttostr(3), Tcolor4pCode[3], 0, clyellow);
+        refreshoneP(inttostr(4), Tcolor4pCode[4], 0, clskyblue);
+        // looktime(10000);
+        // looktime(-1);
+        /// ///////////////////////////////////////////////////////
+        showmessage('4环肯普链树：'+Tcolor4pCode[1]+','+Tcolor4pCode[2]+','+Tcolor4pCode[3]+','+Tcolor4pCode[4]+',');
+
+        self.savetoLabelcaption;
+        for p1 := 1 to 4 do // 原色点
+        begin
+          for p2 := 1 to 4 do // 取其余色时
+          begin // 有一个成立就行了
+            Application.ProcessMessages;
+            if exitOut then
+            begin
+              break;
+              Close;
+            end;
+            Application.ProcessMessages;
+            if p1 = p2 then
+              continue;
+            orderStep := 1;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid='
+              + dprid + ' '; // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set C=0 where  dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            adotemp.Close;
+            self.fromLabelcaptionC(clred);
+            // Tcolor4pCode[3] := 1; // 肯普链树开始点
+            adotemp.SQL.Text := 'update points set FC=' + inttostr(p2) +
+              ',C=1 where pcode=''' + Tcolor4pCode[p1] + ''' and dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            // adotemp.Close;
+            // adotemp.SQL.Text := 'update points set C=1 where ((pcode=''' + Tcolor4pCode[1] + ''') or (pcode=''' + Tcolor4pCode[2] + ''') or (pcode=''' + Tcolor4pCode[3] + ''') or (pcode=''' + Tcolor4pCode[4] + ''')) and dprid=' +
+            // dprid + ' ';
+            // adotemp.ExecSQL;
+            refreshoneP(inttostr(p2), Tcolor4pCode[p1], 1000, clred);
+
+            // looktime(-1);
+            if ((p1 = 4) and (p2 = 1)) then
+              Application.ProcessMessages;
+            isHaveSameColor := False; // 开始点的邻边
+            /// //////////////////////////////////////////////////////
+            // select e.* from edges as e where e.dprid=2  and e.relation
+            // and
+            // (select count(1) from  points as p where p.dprid=2  and p.fc=3
+            // and  (p.pcode=e.pcode1 or p.pcode=pcode2) ) >0
+            while not isHaveSameColor do
+            begin // 肯普链涟渏主体所在也乎
+              Application.ProcessMessages;
+              if exitOut then
+              begin
+                break;
+                Close;
+              end;
+              Application.ProcessMessages;
+              isHaveSameColor := False;
+              isOK := 0;
+              // looktime(-1);
+              ADOQuery3.Close;
+              ADOQuery3.SQL.Text :=
+                'select www.* from (select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pFC1, ' +
+                '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+                + dprid + ') as pFC2, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pF11, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pF12, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pC1, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pC2 ' + ' from edges where Relation ' +
+                ' and dprid=' + dprid +
+                ') as www where (1=1) and (pC1>0 or pC2>0) and (pF11<' +
+                inttostr(curPcount) + ' and  pF12<' + inttostr(curPcount) + ')'
+                + ' and ( pFC1=' + inttostr(p1) + ' or pFC1=' + inttostr(p2) +
+                ' or pFC2=' + inttostr(p1) + ' or pFC2=' + inttostr(p2) + ')';
+              // select www.* from
+              // (select edges.*,
+              // (select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pFC1,
+              // (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid=1) as pFC2
+              // (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pF11,
+              // (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pF12,
+              // (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pC1,
+              // (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pC2
+              // from edges where Relation  and dprid=1) as www
+              // where (1=1) and (pC1>0 or pC2>0) and (pF11<71 and  pF12<71) and ( pFC1=1 or pFC1=2 or pFC2=1 or pFC2=2)
+              ADOQuery3.Open;
+              ADOQuery3.First;
+              while not ADOQuery3.Eof do
+              begin
+                if (ADOQuery3.FieldByName('pcode1').AsString = 'P11') then
+                  Application.ProcessMessages;
+                if (ADOQuery3.FieldByName('pFC1')
+                  .AsString = ADOQuery3.FieldByName('pFC2').AsString) then
+                begin
+
+                  if (ADOQuery3.FieldByName('pC1').AsInteger > 0) then
+                    if (ADOQuery3.FieldByName('pC2').AsInteger > 0) then
+                    begin
+                      isHaveSameColor := True;
+                      break;
+
+                    end;
+
+                  // if 1=2 then
+                  if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor4pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode[3])
+                    or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode
+                    [4])) and ((ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor4pCode[1]) or
+                    (ADOQuery3.FieldByName('pcode2').AsString = Tcolor4pCode[2])
+                    or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor4pCode
+                    [3]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor4pCode[4]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+
+                  end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                    if (((ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor4pCode[1]) or
+                      (ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode
+                      [2]) or (ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor4pCode[3]) or
+                      (ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode
+                      [4]))) then // 是四环的边时
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                    if (((ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor4pCode[1]) or
+                      (ADOQuery3.FieldByName('pcode2').AsString = Tcolor4pCode
+                      [2]) or (ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor4pCode[3]) or
+                      (ADOQuery3.FieldByName('pcode2').AsString = Tcolor4pCode
+                      [4]))) then // 是四环的边时
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode1').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP((inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode1').AsString, 1000, clred);
+                    // looktime(-1);
+                    // ADOQuery3.Next;
+                    // continue;
+                    // isHaveSameColor := True;
+                    isOK := isOK + 1;
+                    break;
+                  end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode2').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP((inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode2').AsString, 1000, clred);
+                    // looktime(-1);
+                    // OQuery3.Next;
+                    // continue;
+                    // isHaveSameColor := True;
+                    isOK := isOK + 1;
+                    break;
+                  end;
+
+                end;
+                ADOQuery3.Next;
+              end;
+              // if 1=2 then
+              if isHaveSameColor then
+              // if ADOQuery3.RecordCount=0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+              if isOK = 0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+            end;
+            // if 1 = 2 then
+            if not isHaveSameColor then
+            begin
+              Application.ProcessMessages;
+              break;
+            end;
+            if 1 = 2 then
+              if isOK = 0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+          end;
+          if not isHaveSameColor then
+          // if isOK = 0 then
+          // if ((not isHaveSameColor) and (isOK = 0)) then
+          begin
+            // adotemp.Close;
+            // adotemp.SQL.Text :=
+            // 'update points set FC=C1248C1111 where  dprid=' + dprid + ' ';
+            // adotemp.ExecSQL;
+            adotemp.Close;
+            // Tcolor4pCode[3] := 1; // 肯普链树中心点
+            adotemp.SQL.Text := 'update points set FC=' + inttostr(p1) +
+              ' where pcode=''' + Tcolor4pCode[0] + ''' and dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            refreshoneP(inttostr(p1), Tcolor4pCode[0], 1000, clred);
+            self.savetoLabelcaption;
+            break;
+          end;
+        end;
+        self.fromLabelcaption;
+        if not isHaveSameColor then
+          // if ((not isHaveSameColor) and (isOK = 0)) then
+          showmessage('4环肯普链树，这个已经可解了')
+        else
+        begin
+          showmessage('4环肯普链树，仍然不可解');
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid=' +
+            dprid + ' '; // 手工调试时，将两个字段齐改才行
+          adotemp.ExecSQL;
+          break;
+        end;
+        // 4环肯普链树  必定1234  ,1243,1347,1324,1423,1432,每点变一次，不是仅变两次
+      end
+      else
+      begin
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set FC=' + temps[1] + ' where F1=' +
+          inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 1000);
+        refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 0,
+          clMoneyGreen);
+      end;
+    end;
+    if tempi = 5 then
+    begin
+      ADOQuery1.Close;
+      ADOQuery1.SQL.Text :=
+        'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+        + dprid + ') as pFC1, ' +
+        '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+        + dprid + ') as pFC2 ' + ' from edges where Relation ' + ' and dprid=' +
+        dprid + ' and (pcode1=''' + ADOQuery2.FieldByName('pcode').AsString +
+        ''' or pcode2=''' + ADOQuery2.FieldByName('pcode').AsString + ''')';
+      temps := '1234';
+      ADOQuery1.Open;
+      ADOQuery1.First;
+      while not ADOQuery1.Eof do
+      begin
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC1').AsString, '');
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC2').AsString, '');
+        ADOQuery1.Next;
+      end;
+      if temps = '' then
+      begin
+        // 5环肯普链树   必定121234
+        // showmessage('5环肯普链树   必定121234');
+       // showmessage('5环肯普链树');
+        isOK := 0;
+
+        Tcolor5pCode[0] := ADOQuery2.FieldByName('pcode').AsString;
+        PPcode5ColorIndex[0] := 0;
+        // refreshoneP(inttostr(0), Tcolor4pCode[0], 3000, clgreen);
+        refreshoneP(inttostr(0), Tcolor5pCode[0], 0, clOlive);
+        // ('P54', 'P55', 'P18', 'P17', 'P99')
+        // 终于自建了一个点线状数据测试了，可能不符合现实世界的片状地图。测试点线状地图，只为测试肯普链用，结果也不知有没解。
+        ADOQuery1.First;
+        colorindex := 0;
+        while not ADOQuery1.Eof do
+        begin
+          colorindex := colorindex + 1;
+          // for colorindex := 1 to 5 do
+          begin
+            if ADOQuery1.FieldByName('pcode1').AsString <> Tcolor5pCode[0] then
+            begin
+              Tcolor5pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode1').AsString;
+              PPcode5ColorIndex[colorindex] := ADOQuery1.FieldByName('pFC1')
+                .AsInteger;
+              // break;
+            end;
+            if ADOQuery1.FieldByName('pcode2').AsString <> Tcolor5pCode[0] then
+            begin
+              Tcolor5pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode2').AsString;
+              PPcode5ColorIndex[colorindex] := ADOQuery1.FieldByName('pFC2')
+                .AsInteger;
+              // break;
+            end;
+          end;
+          ADOQuery1.Next;
+        end; // 以上为Tcolor4pCode[i]赋值
+        // 数据正常下，不是普遍无规律的  14,3,4,13,42
+        isHaveSameColor := False;
+        // C1248C1111 备份字段用也
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set C1248C1111=FC where  dprid=' +
+          dprid + ' ';
+        adotemp.ExecSQL;
+        refreshoneP(inttostr(PPcode5ColorIndex[1]), Tcolor5pCode[1], 0, cllime);
+        refreshoneP(inttostr(PPcode5ColorIndex[2]), Tcolor5pCode[2], 0,
+          clFuchsia);
+        refreshoneP(inttostr(PPcode5ColorIndex[3]), Tcolor5pCode[3], 0,
+          clyellow);
+        refreshoneP(inttostr(PPcode5ColorIndex[4]), Tcolor5pCode[4], 0,
+          clskyblue);
+        refreshoneP(inttostr(PPcode5ColorIndex[5]), Tcolor5pCode[5], 0,
+          clsilver);
+        // looktime(10000);
+        // looktime(-1);
+        /// ///////////////////////////////////////////////////////
+        showmessage('5环肯普链树：'+Tcolor5pCode[1]+','+Tcolor5pCode[2]+','+Tcolor5pCode[3]+','+Tcolor5pCode[4]+','+Tcolor5pCode[5]+',');
+
+        self.savetoLabelcaption;
+        // colorindex   0  3  4  1  2  4    12123
+        for p1 := 1 to 5 do
+          for p2 := (p1 + 1) to 5 do
+            if (PPcode5ColorIndex[p1] = PPcode5ColorIndex[p2]) then
+            begin
+              if (p2 = (p1 + 2)) then
+              begin
+                Abacd_A := Tcolor5pCode[p1];
+                Abacd_Aa := Tcolor5pCode[p2];
+                Abacd_b := Tcolor5pCode[p1 + 1];
+                Abacd_c := Tcolor5pCode[(p2 + 1) mod 5];
+                Abacd_d := Tcolor5pCode[(p2 + 2) mod 5];
+                a := p1;
+                aa := p2;
+                b := p1 + 1;
+                c := (p2 + 1) mod 5;
+                d := (p2 + 2) mod 5;
+                if c = 0 then
+                  c := 5;
+                if d = 0 then
+                  d := 5;
+                break;
+              end;
+              if (p2 = (p1 + 3)) then
+              begin
+                Abacd_Aa := Tcolor5pCode[p1];
+                Abacd_A := Tcolor5pCode[p2];
+                Abacd_b := Tcolor5pCode[(p2 + 1) mod 5];
+                Abacd_c := Tcolor5pCode[(p1 + 1) mod 5];
+                Abacd_d := Tcolor5pCode[(p1 + 2) mod 5];
+                a := p2;
+                aa := p1;
+                b := (p2 + 1) mod 5;
+                c := (p1 + 1) mod 5;
+                d := (p1 + 2) mod 5;
+                if b = 0 then
+                  b := 5;
+                if c = 0 then
+                  c := 5;
+                if d = 0 then
+                  d := 5;
+                break;
+              end;
+            end;
+        if 1 = 2 then
+        begin
+          if isTest5ChainReturnOK = 1 then
+          // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          begin
+            /// ////测试五环用
+            // 这里可以update具体颜值，以测试五环用
+            adotemp.Close;
+            adotemp.SQL.Text :=
+              'update points set FC=1,C1248C1111=1 where  pcode=''P82'' and  dprid='
+              + dprid + ' ';
+            // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          end;
+          if isTest5ChainReturnOK = 0 then
+          // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          begin
+            /// ////测试五环用
+            // 这里可以update具体颜值，以测试五环用
+            adotemp.Close;
+            adotemp.SQL.Text :=
+              'update points set FC=3,C1248C1111=3 where  pcode=''P82'' and  dprid='
+              + dprid + ' ';
+            // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          end;
+        end;
+        /// /////////////////////////////////
+        Application.ProcessMessages;
+        if exitOut then
+        begin
+          break;
+          Close;
+        end;
+        Application.ProcessMessages;
+        for ijk := 1 to 4 do
+        begin
+          if ijk = 1 then
+          begin
+            p2 := b; // 原色点
+            p1 := c; // 取其余色时
+          end;
+          if ijk = 2 then
+          begin
+            p2 := c; // 原色点
+            p1 := b; // 取其余色时
+          end;
+          if ijk = 3 then
+          begin
+            p2 := b; // 原色点
+            p1 := d; // 取其余色时
+          end;
+          if ijk = 4 then
+          begin
+            p2 := d; // 原色点
+            p1 := b; // 取其余色时
+          end;
+
+          // 有一个成立就行了
+          Application.ProcessMessages;
+          if exitOut then
+          begin
+            break;
+            Close;
+          end;
+          Application.ProcessMessages;
+          // if p1 = p2 then
+          // continue;
+
+          // if not(((p2 = b) and (p1 = c)) or ((p2 = b) and (p1 = d))) then
+          // continue; // 只有两种情况可向下，这种思维阅读记忆法
+
+          orderStep := 1;
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid=' +
+            dprid + ' ';
+          // 手工调试时，将两个字段齐改才行
+          adotemp.ExecSQL;
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set C=0 where  dprid=' +
+            dprid + ' ';
+          adotemp.ExecSQL;
+          adotemp.Close;
+          self.fromLabelcaptionC(clred);
+          // Tcolor4pCode[3] := 1; // 肯普链树开始点     PPcode5ColorIndex[p2]
+          adotemp.SQL.Text := 'update points set FC=' +
+            inttostr(PPcode5ColorIndex[p2]) + ',C=1 where pcode=''' +
+            Tcolor5pCode[p1] + ''' and dprid=' + dprid + ' ';
+          adotemp.ExecSQL;
+          // adotemp.Close;
+          // adotemp.SQL.Text := 'update points set C=1 where ((pcode=''' + Tcolor4pCode[1] + ''') or (pcode=''' + Tcolor4pCode[2] + ''') or (pcode=''' + Tcolor4pCode[3] + ''') or (pcode=''' + Tcolor4pCode[4] + ''')) and dprid=' +
+          // dprid + ' ';
+          // adotemp.ExecSQL;
+          refreshoneP(inttostr(PPcode5ColorIndex[p2]), Tcolor5pCode[p1],
+            1000, clred);
+
+          // looktime(-1);
+          // if ((p1 = 4) and (p2 = 1)) then
+          // Application.ProcessMessages;
+          isHaveSameColor := False; // 开始点的邻边
+          /// //////////////////////////////////////////////////////
+          // select e.* from edges as e where e.dprid=2  and e.relation
+          // and
+          // (select count(1) from  points as p where p.dprid=2  and p.fc=3
+          // and  (p.pcode=e.pcode1 or p.pcode=pcode2) ) >0
+          // while not isHaveSameColor do
+          while not isHaveSameColor do
+          begin // 肯普链涟渏主体所在也乎
+            Application.ProcessMessages;
+            if exitOut then
+            begin
+              break;
+              Close;
+            end;
+            Application.ProcessMessages;
+            isHaveSameColor := False;
+            isOK := 0;
+            // looktime(-1);
+            ADOQuery3.Close;
+            ADOQuery3.SQL.Text :=
+              'select www.* from (select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+              + dprid + ') as pFC1, ' +
+              '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+              + dprid + ') as pFC2, ' +
+              ' (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+              + dprid + ') as pF11, ' +
+              ' (select p.F1  from points as p where p.pcode=edges.pcode2 and p.dprid='
+              + dprid + ') as pF12, ' +
+              ' (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid='
+              + dprid + ') as pC1, ' +
+              ' (select p.C  from points as p where p.pcode=edges.pcode2 and p.dprid='
+              + dprid + ') as pC2 ' + ' from edges where Relation ' +
+              ' and dprid=' + dprid +
+              ') as www where (1=1) and (pC1>0 or pC2>0) and (pF11<' +
+              inttostr(curPcount) + ' and  pF12<' + inttostr(curPcount) + ')' +
+              ' and ( pFC1=' + inttostr(PPcode5ColorIndex[p1]) + ' or pFC1=' +
+              inttostr(PPcode5ColorIndex[p2]) + ' or pFC2=' +
+              inttostr(PPcode5ColorIndex[p1]) + ' or pFC2=' +
+              inttostr(PPcode5ColorIndex[p2]) + ')';
+            ADOQuery3.Open;
+            ADOQuery3.First;
+            while not ADOQuery3.Eof do
+            begin
+              if ADOQuery3.FieldByName('pcode1').AsString = 'P3' then
+                if ADOQuery3.FieldByName('pcode2').AsString = 'P12' then
+                  Application.ProcessMessages;
+
+              if (ADOQuery3.FieldByName('pFC1').AsString = ADOQuery3.FieldByName
+                ('pFC2').AsString) then
+              begin
+
+                if (ADOQuery3.FieldByName('pC1').AsInteger > 0) then
+                  if (ADOQuery3.FieldByName('pC2').AsInteger > 0) then
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                // if 1=2 then
+                if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[1]
+                  ) or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                  [2]) or (ADOQuery3.FieldByName('pcode1')
+                  .AsString = Tcolor5pCode[3]) or
+                  (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[4])
+                  or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[5]
+                  )) and ((ADOQuery3.FieldByName('pcode2')
+                  .AsString = Tcolor5pCode[1]) or
+                  (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[2])
+                  or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[3]
+                  ) or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                  [4]) or (ADOQuery3.FieldByName('pcode2')
+                  .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                begin
+                  isHaveSameColor := True;
+                  break;
+                end;
+                if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                  if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                  if (((ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                begin
+                  orderStep := orderStep + 1;
+                  adotemp.Close;
+                  adotemp.SQL.Text := 'update points set FC=' +
+                    (inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') + ',C='
+                    + inttostr(orderStep) + ' where pcode=''' +
+                    ADOQuery3.FieldByName('pcode1').AsString + ''' and dprid=' +
+                    dprid + ' ';
+                  adotemp.ExecSQL;
+                  refreshoneP((inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                    ADOQuery3.FieldByName('pcode1').AsString, 1000, clred);
+                  // looktime(-1);
+                  // ADOQuery3.Next;
+                  // continue;
+                  // isHaveSameColor := True;
+                  isOK := isOK + 1;
+                  if ADOQuery3.FieldByName('pcode1').AsString = 'P1' then
+                    Application.ProcessMessages;
+                  break;
+                end;
+                if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                begin
+                  orderStep := orderStep + 1;
+                  adotemp.Close;
+                  adotemp.SQL.Text := 'update points set FC=' +
+                    (inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') + ',C='
+                    + inttostr(orderStep) + ' where pcode=''' +
+                    ADOQuery3.FieldByName('pcode2').AsString + ''' and dprid=' +
+                    dprid + ' ';
+                  adotemp.ExecSQL;
+                  refreshoneP((inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                    ADOQuery3.FieldByName('pcode2').AsString, 1000, clred);
+                  // looktime(-1);
+                  // OQuery3.Next;
+                  // continue;
+                  // isHaveSameColor := True;
+                  isOK := isOK + 1;
+                  if ADOQuery3.FieldByName('pcode2').AsString = 'P1' then
+                    Application.ProcessMessages;
+                  break;
+                end;
+              end;
+              ADOQuery3.Next;
+            end;
+            if isHaveSameColor then
+            // if ADOQuery3.RecordCount=0 then
+            begin
+              Application.ProcessMessages;
+              break;
+            end;
+            if isOK = 0 then
+            begin
+              Application.ProcessMessages;
+              break;
+            end;
+          end;
+//          if isHaveSameColor then
+//          // if ADOQuery3.RecordCount=0 then
+//          begin
+//            Application.ProcessMessages;
+//            break;
+//          end;
+//          if isOK = 0 then
+//          begin
+//            Application.ProcessMessages;
+//            break;
+//          end;
+        end;
+
+        if 1 = 2 then
+          if isHaveSameColor then // 如果上面的不成
+          begin
+            /// /////////////////////////////////
+            p2 := b; // 原色点
+            p1 := d; // 取其余色时
+            // 有一个成立就行了
+            Application.ProcessMessages;
+            if exitOut then
+            begin
+              break;
+              Close;
+            end;
+            Application.ProcessMessages;
+            // if p1 = p2 then
+            // continue;
+
+            // if not(((p2 = b) and (p1 = c)) or ((p2 = b) and (p1 = d))) then
+            // continue; // 只有两种情况可向下，这种思维阅读记忆法
+
+            orderStep := 1;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid='
+              + dprid + ' ';
+            // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set C=0 where  dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            adotemp.Close;
+            self.fromLabelcaptionC(clred);
+            // Tcolor4pCode[3] := 1; // 肯普链树开始点     PPcode5ColorIndex[p2]
+            adotemp.SQL.Text := 'update points set FC=' +
+              inttostr(PPcode5ColorIndex[p2]) + ',C=1 where pcode=''' +
+              Tcolor5pCode[p1] + ''' and dprid=' + dprid + ' ';
+            adotemp.ExecSQL;
+            // adotemp.Close;
+            // adotemp.SQL.Text := 'update points set C=1 where ((pcode=''' + Tcolor4pCode[1] + ''') or (pcode=''' + Tcolor4pCode[2] + ''') or (pcode=''' + Tcolor4pCode[3] + ''') or (pcode=''' + Tcolor4pCode[4] + ''')) and dprid=' +
+            // dprid + ' ';
+            // adotemp.ExecSQL;
+            refreshoneP(inttostr(PPcode5ColorIndex[p2]), Tcolor5pCode[p1],
+              1000, clred);
+
+            // looktime(-1);
+            // if ((p1 = 4) and (p2 = 1)) then
+            // Application.ProcessMessages;
+            isHaveSameColor := False; // 开始点的邻边
+            /// //////////////////////////////////////////////////////
+            // select e.* from edges as e where e.dprid=2  and e.relation
+            // and
+            // (select count(1) from  points as p where p.dprid=2  and p.fc=3
+            // and  (p.pcode=e.pcode1 or p.pcode=pcode2) ) >0
+            // while not isHaveSameColor do
+            while not isHaveSameColor do
+            begin // 肯普链涟渏主体所在也乎
+              Application.ProcessMessages;
+              if exitOut then
+              begin
+                break;
+                Close;
+              end;
+              Application.ProcessMessages;
+              isHaveSameColor := False;
+              isOK := 0;
+              // looktime(-1);
+              ADOQuery3.Close;
+              ADOQuery3.SQL.Text :=
+                'select www.* from (select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pFC1, ' +
+                '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+                + dprid + ') as pFC2, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pF11, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pF12, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pC1, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pC2 ' + ' from edges where Relation ' +
+                ' and dprid=' + dprid +
+                ') as www where (1=1) and (pC1>0 or pC2>0) and (pF11<' +
+                inttostr(curPcount) + ' and  pF12<' + inttostr(curPcount) + ')'
+                + ' and ( pFC1=' + inttostr(PPcode5ColorIndex[p1]) + ' or pFC1='
+                + inttostr(PPcode5ColorIndex[p2]) + ' or pFC2=' +
+                inttostr(PPcode5ColorIndex[p1]) + ' or pFC2=' +
+                inttostr(PPcode5ColorIndex[p2]) + ')';
+              ADOQuery3.Open;
+              ADOQuery3.First;
+              while not ADOQuery3.Eof do
+              begin
+                if ADOQuery3.FieldByName('pcode1').AsString = 'P3' then
+                  if ADOQuery3.FieldByName('pcode2').AsString = 'P12' then
+                    Application.ProcessMessages;
+
+                if (ADOQuery3.FieldByName('pFC1')
+                  .AsString = ADOQuery3.FieldByName('pFC2').AsString) then
+                begin
+
+                  if (ADOQuery3.FieldByName('pC1').AsInteger > 0) then
+                    if (ADOQuery3.FieldByName('pC2').AsInteger > 0) then
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  // if 1=2 then
+                  if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[5])) and
+                    ((ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[1]
+                    ) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                    if (((ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor5pCode[1]) or
+                      (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                      [2]) or (ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor5pCode[3]) or
+                      (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                      [4]) or (ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                    if (((ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor5pCode[1]) or
+                      (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                      [2]) or (ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor5pCode[3]) or
+                      (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                      [4]) or (ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode1').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP
+                      ((inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode1').AsString, 1000, clred);
+                    // looktime(-1);
+                    // ADOQuery3.Next;
+                    // continue;
+                    // isHaveSameColor := True;
+                    isOK := isOK + 1;
+                    if ADOQuery3.FieldByName('pcode1').AsString = 'P1' then
+                      Application.ProcessMessages;
+                    break;
+                  end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode2').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP
+                      ((inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode2').AsString, 1000, clred);
+                    // looktime(-1);
+                    // OQuery3.Next;
+                    // continue;
+                    // isHaveSameColor := True;
+                    isOK := isOK + 1;
+                    if ADOQuery3.FieldByName('pcode2').AsString = 'P1' then
+                      Application.ProcessMessages;
+                    break;
+                  end;
+                end;
+                ADOQuery3.Next;
+              end;
+              if isHaveSameColor then
+              // if ADOQuery3.RecordCount=0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+              if isOK = 0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+            end;
+
+          end; // 如果上面的不成
+
+        if not isHaveSameColor then
+        begin
+          // adotemp.Close;
+          // adotemp.SQL.Text :=
+          // 'update points set FC=C1248C1111 where  dprid=' + dprid + ' ';
+          // adotemp.ExecSQL;
+          adotemp.Close;
+          // Tcolor4pCode[3] := 1; // 肯普链树中心点
+          adotemp.SQL.Text := 'update points set FC=' +
+            inttostr(PPcode5ColorIndex[p1]) + ' where pcode=''' + Tcolor5pCode
+            [0] + ''' and dprid=' + dprid + ' ';
+          adotemp.ExecSQL;
+          refreshoneP(inttostr(PPcode5ColorIndex[p1]), Tcolor5pCode[0],
+            1000, clred);
+          self.savetoLabelcaption;
+
+        end;
+
+        self.fromLabelcaption;
+        if not isHaveSameColor then
+          showmessage('5环肯普链树，这个已经可解了')
+        else
+        begin
+          showmessage('5环肯普链树，仍然不可解');
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid=' +
+            dprid + ' ';
+          // 手工调试时，将两个字段齐改才行
+          adotemp.ExecSQL;
+          break;
+        end;
+        // 4环肯普链树  必定1234  ,1243,1347,1324,1423,1432,每点变一次，不是仅变两次
+
+        // 5环肯普链树   必定121234
+      end
+      else
+      begin
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set FC=' + temps[1] + ' where F1=' +
+          inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 1000);
+        refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 0,
+          clMoneyGreen);
+      end;
+    end;
+  end;
+
+  refreshhClick(nil);
+  AutorefreshALLP;
+  showmessage('ok');
+end;
+
+procedure TFC.KePuPlay5circle222Click(Sender: TObject);
+var
+  p1, p2, p3, p4, p5, p6, pp6i, tempi: Integer;
+  j1, j2, j3, j4, j5, j6: Integer;
+  i00, i01, i02, i03, i04, i05, i06, i07, i08, i09: Integer;
+  PP6: array [1 .. 6] of Integer;
+  PPcode6: array [1 .. 6] of String;
+  RResult, pcode1, pcode2, temps: string;
+  pindex1, pindex2: Integer;
+  ok, notok: boolean;
+  Tcolor4pCode: array [0 .. 4] of string;
+
+  colorindex, orderStep, ijk, stept: Integer;
+  isHaveSameColor: boolean;
+  Tcolor5pCode: array [0 .. 5] of string; // Tcolor5pCode
+  PPcode5ColorIndex: array [0 .. 5] of Integer; // ColorIndex
+  Abacd_A, Abacd_b, Abacd_Aa, Abacd_c, Abacd_d: string; // Tcolor5pCode
+  a, b, aa, c, d: Integer; // PPcode5Index
+  isTest5Chain: Integer; // 实例且改代码才可测五环肯普链涟漪
+  isOK: Integer;
+begin
+
+  showmessage('此为演示数据中弹出五环肯普链的例子，要返回成功还要要代码来修改数据模拟才出现，现实中我找不到实例，演示五环肯普链用');
+
+  isTest5Chain := 1; // 实例且改代码才可测五环肯普链涟漪
+  // isTest5Chain := 0; // 实例且改代码才可测五环肯普链涟漪
+  exitOut := False;
+  if RadioButton1.Checked then
+    TRzButton(Sender).Tag := 1
+  else
+    TRzButton(Sender).Tag := 2;
+  // Image1.Picture.LoadFromFile(extractfilepath(paramstr(0)) + '反例.jpg');
+
+  RResult := '';
+
+  N6Click(nil);
+
+  ADOQuery2.Close;
+  ADOQuery2.SQL.Text := 'update points set CCC=0,F1=0,C=0,FC=0 where  dprid=' +
+    dprid + ' ';
+  ADOQuery2.ExecSQL;
+
+  ADOQuery2.Close;
+  ADOQuery2.SQL.Text := 'select  count(1) as pc from points where 1=1 and F1=0 '
+    + ' and dprid=' + dprid + ' ';
+  ADOQuery2.Open;
+  PCount := ADOQuery2.FieldByName('pc').AsInteger;
+  /// ////测试五环用   隐去一点
+  if isTest5Chain = 1 then
+  // if 1 = 2 then
+  begin
+    PCount := PCount - 1;
+    adotemp.Close;
+    adotemp.SQL.Text :=
+      'update points set dprid=2 where pcode=''P0'' and dprid=' + dprid + ' ';
+    // 测试时P0正确是dprid=1，现暂动态改为2来测试
+    adotemp.ExecSQL;
+    adotemp.Close;
+    adotemp.SQL.Text :=
+      'update edges set relation=0 where pcode1=''P0'' and dprid=' + dprid +
+      ' '; // 测试时P0正确是dprid=1，现暂动态改为2来测试  ,仅五边P1,P2,P3,P4,P5
+    adotemp.ExecSQL;
+  end;
+  /// ////测试五环用
+  curPcount := PCount + 1;
+
+  while curPcount > 6 do
+  begin
+    curPcount := curPcount - 1;
+    if curPcount = 6 then
+    begin
+      ADOQuery2.Close;
+      ADOQuery2.SQL.Text := 'select  * from points where 1=1 and F1=0 ' +
+        ' and dprid=' + dprid + ' ';
+      ADOQuery2.Open;
+      ADOQuery2.First;
+      tempi := 0;
+      while not ADOQuery2.Eof do
+      begin
+        tempi := tempi + 1;
+        ADOQuery2.Edit;
+        ADOQuery2.FieldByName('F1').AsInteger := tempi;
+        ADOQuery2.Post;
+        ADOQuery2.Next;
+      end;
+      break;
+    end;
+
+    ADOQuery1.Close;
+    ADOQuery1.SQL.Text :=
+      'select ww.* from (select w.pcode1,count(1) as pc from (select pcode1,pcode2 from edges where Relation '
+      + ' and dprid=' + dprid +
+      ' and pcode1 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) +
+      ') and pcode2 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) + ')  ' +
+      ' union select pcode2,pcode1 from edges where relation and dprid=' + dprid
+      + ' and pcode1 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) +
+      ') and pcode2 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) + ')  ' +
+    // ' ) as w group by w.pcode1) as ww order by ww.pc';  notok  //测试四环，五环
+    // ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1';  //ookk
+    // ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1 desc';  //测试四环，五环
+      ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1'; // ookk
+    // ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1 desc';  //测试四环，五环
+    // 上面两句SQL有个order by ww.pcode1确不同，有者，可解那个双四环，无者，第二个不可解
+    // 无者，可用于测试五环乎，同样算法，因为一个order出现可解与不可解之大事
+    ADOQuery1.Open;
+    if ADOQuery1.FieldByName('pc').AsInteger > 5 then
+    begin
+      showmessage('数据有错了');
+
+    end;
+
+    ADOQuery2.Close;
+    ADOQuery2.SQL.Text := 'update points set F1=' + inttostr(curPcount) +
+      ',CCC=' + ADOQuery1.FieldByName('pc').AsString + ' where pcode=''' +
+      ADOQuery1.FieldByName('pcode1').AsString + ''' and dprid=' + dprid + ' ';
+    ADOQuery2.ExecSQL;
+    // exit;
+
+  end;
+  if curPcount = 6 then
+  // showmessage(inttostr(PCount));
+  begin
+    // 九重循环，九层之台，起于累土，千里之行，始于足下
+    ok := False;
+    notok := True;
+
+    ADOQuery1.Close;
+    ADOQuery1.SQL.Text :=
+      'select edges.*,(select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+      + dprid + ') as pF1, ' +
+      '  (select p.F1  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+      + dprid + ') as pF2 ' + ' from edges where Relation ' + ' and dprid=' +
+      dprid + ' ';
+    ADOQuery1.Open;
+
+    for p1 := 1 to 4 do
+    begin
+      for p2 := 1 to 4 do
+      begin
+        for p3 := 1 to 4 do
+        begin
+          for p4 := 1 to 4 do
+          begin
+            for p5 := 1 to 4 do
+            begin
+              for p6 := 1 to 4 do
+              begin
+                PP6[1] := p1;
+                PP6[2] := p2;
+                PP6[3] := p3;
+                PP6[4] := p4;
+                PP6[5] := p5;
+                PP6[6] := p6;
+                ok := True;
+                notok := True;
+                // ADOQuery1.Close;
+                // ADOQuery1.SQL.Text :=
+                // 'select edges.*,(select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                // + dprid + ') as pF1, ' +
+                // '  (select p.F1  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+                // + dprid + ') as pF2 ' + ' from edges where Relation ' +
+                // ' and dprid=' + dprid + ' ';
+                // ADOQuery1.Open;
+                ADOQuery1.First;
+                while not ADOQuery1.Eof do
+                begin
+                  // pcode1 := ADOQuery1.FieldByName('pF1').AsString;
+                  // pcode2 := ADOQuery1.FieldByName('pF2').AsString;
+                  pindex1 := ADOQuery1.FieldByName('pF1').AsInteger;
+                  pindex2 := ADOQuery1.FieldByName('pF2').AsInteger;
+                  if ((pindex1 > 0) and (pindex1 < 7)) then
+                    if ((pindex2 > 0) and (pindex2 < 7)) then
+                      if PP6[pindex1] = PP6[pindex2] then
+                      begin
+                        notok := True;
+                        ok := False;
+                        break;
+                      end;
+                  ADOQuery1.Next;
+                end;
+                if ok then
+                  for pp6i := 1 to 6 do
+                  begin
+
+                    ADOQuery2.Close;
+                    ADOQuery2.SQL.Text := 'update points set FC=' +
+                      inttostr(PP6[pp6i]) + ' where F1=' + inttostr(pp6i) +
+                      ' and dprid=' + dprid + ' ';
+                    ADOQuery2.ExecSQL;
+
+                  end;
+
+                if ok then
+                  break;
+              end;
+              if ok then
+                break;
+            end;
+            if ok then
+              break;
+          end;
+          if ok then
+            break;
+        end;
+        if ok then
+          break;
+      end;
+      if ok then
+        break;
+    end;
+  end;
+  refreshhClick(nil); // 刷新图中各点
+  if not ok then
+  begin
+    showmessage('此图肯定没有四色解');
+    exit;
+  end;
+  stept := trunc(stepTime.Value);
+  // 这里若要刷新开始六点颜值，写代码，不想写，用处不大乎
+  adotemp.Close;
+  adotemp.SQL.Text := 'select * from points  where F1<7 and dprid=' +
+    dprid + ' ';
+  adotemp.Open;
+  adotemp.First;
+  while not adotemp.Eof do
+  // for pp6i := 1 to 6 do
+  begin
+    // PPcode6[pp6i] := adotemp.FieldByName('pcode').AsString;
+    refreshoneP(adotemp.FieldByName('fc').AsString, adotemp.FieldByName('pcode')
+      .AsString, 0, clMoneyGreen);
+    adotemp.Next;
+  end;
+
+  while curPcount < (PCount + 2) do
+  // while curPcount < PCount do
+  begin
+    Application.ProcessMessages;
+    if exitOut then
+    begin
+      break;
+      Close;
+    end;
+    Application.ProcessMessages;
+    curPcount := curPcount + 1;
+    if isTest5Chain = 1 then
+      /// ////测试五环用
+      if (curPcount = (PCount + 1)) then
+      begin
+        if 1 = 1 then
+        // if 1 = 2 then
+        begin
+          // curPcount := curPcount + 1;
+          adotemp.Close;
+          adotemp.SQL.Text :=
+            'update points set dprid=1,CCC=5,F1=118,FC=0 where pcode=''P0'' and dprid=2';
+          // 测试时P0正确是dprid=1，现暂动态改为2来测试
+          adotemp.ExecSQL;
+          adotemp.Close;
+          adotemp.SQL.Text :=
+            'update edges set relation=1 where (ecode=''P0P1'' or ecode=''P0P2'' or ecode=''P0P3''  or  ecode=''P0P4''  or ecode=''P0P5'') and dprid='
+            + dprid + ' '; // 测试时P0正确是dprid=1，现暂动态改为2来测试  ,仅五边P1,P2,P3,P4,P5
+          adotemp.ExecSQL;
+
+        end;
+      end;
+    /// ////测试五环用
+
+    ADOQuery2.Close;
+    ADOQuery2.SQL.Text := 'select  * from points where 1=1 and F1= ' +
+      inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+    ADOQuery2.Open;
+    tempi := ADOQuery2.FieldByName('CCC').AsInteger;
+    if ADOQuery2.FieldByName('pcode').AsString = 'P96' then
+      Application.ProcessMessages; // 断点查错，果然不顺也
+    if tempi < 4 then
+    begin
+
+      ADOQuery1.Close;
+      ADOQuery1.SQL.Text :=
+        'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+        + dprid + ') as pFC1, ' +
+        '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+        + dprid + ') as pFC2 ' + ' from edges where Relation ' + ' and dprid=' +
+        dprid + ' and (pcode1=''' + ADOQuery2.FieldByName('pcode').AsString +
+        ''' or pcode2=''' + ADOQuery2.FieldByName('pcode').AsString + ''')';
+      temps := '1234';
+      ADOQuery1.Open;
+      ADOQuery1.First;
+      while not ADOQuery1.Eof do
+      begin
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC1').AsString, '');
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC2').AsString, '');
+        ADOQuery1.Next;
+      end;
+      if temps = '' then
+      begin
+        showmessage('小于4的，可能有错了');
+      end
+      else
+      begin
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set FC=' + temps[1] + ' where F1=' +
+          inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 1000);
+        refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 0,
+          clMoneyGreen);
+      end;
+    end;
+    if tempi = 4 then
+    begin
+      ADOQuery1.Close;
+      ADOQuery1.SQL.Text :=
+        'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+        + dprid + ') as pFC1, ' +
+        '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+        + dprid + ') as pFC2 ' + ' from edges where Relation ' + ' and dprid=' +
+        dprid + ' and (pcode1=''' + ADOQuery2.FieldByName('pcode').AsString +
+        ''' or pcode2=''' + ADOQuery2.FieldByName('pcode').AsString + ''')';
+      temps := '1234';
+      ADOQuery1.Open;
+      ADOQuery1.First;
+      while not ADOQuery1.Eof do
+      begin
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC1').AsString, '');
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC2').AsString, '');
+        ADOQuery1.Next;
+      end;
+      if temps = '' then
+      begin
+        // 4环肯普链树  必定1234  ,1243,1347,1324,1423,1432,每点变一次，不是仅变两次
+        showmessage('4环肯普链树');
+        // showmessage('4环肯普链树  必定1234');
+        // refreshhClick(nil); // 刷新图中各点
+        Tcolor4pCode[0] := ADOQuery2.FieldByName('pcode').AsString;
+        // refreshoneP(inttostr(0), Tcolor4pCode[0], 3000, clgreen);
+        refreshoneP(inttostr(0), Tcolor4pCode[0], 0, clOlive);
+        // ('P54', 'P55', 'P18', 'P17', 'P99')
+        // 终于自建了一个点线状数据测试了，可能不符合现实世界的片状地图。测试点线状地图，只为测试肯普链用，结果也不知有没解。
+        ADOQuery1.First;
+        while not ADOQuery1.Eof do
+        begin
+          for colorindex := 1 to 4 do
+          begin
+            if ADOQuery1.FieldByName('pFC1').AsInteger = colorindex then
+              Tcolor4pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode1').AsString;
+            if ADOQuery1.FieldByName('pFC2').AsInteger = colorindex then
+              Tcolor4pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode2').AsString;
+          end;
+          ADOQuery1.Next;
+        end; // 以上为Tcolor4pCode[i]赋值
+        // 数据正常下，不是普遍无规律的  14,3,4,13,42
+        isHaveSameColor := False;
+        // C1248C1111 备份字段用也
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set C1248C1111=FC where  dprid=' +
+          dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(inttostr(1), Tcolor4pCode[1], 1000, clYellow);
+        // refreshoneP(inttostr(2), Tcolor4pCode[2], 1000, clblue);
+        // refreshoneP(inttostr(3), Tcolor4pCode[3], 1000, clLime);
+        // refreshoneP(inttostr(4), Tcolor4pCode[4], 1000, clFuchsia);
+        refreshoneP(inttostr(1), Tcolor4pCode[1], 0, cllime);
+        refreshoneP(inttostr(2), Tcolor4pCode[2], 0, clFuchsia);
+        refreshoneP(inttostr(3), Tcolor4pCode[3], 0, clyellow);
+        refreshoneP(inttostr(4), Tcolor4pCode[4], 0, clskyblue);
+        // looktime(10000);
+        // looktime(-1);
+        /// ///////////////////////////////////////////////////////
+        self.savetoLabelcaption;
+        for p1 := 1 to 4 do // 原色点
+        begin
+          for p2 := 1 to 4 do // 取其余色时
+          begin // 有一个成立就行了
+            Application.ProcessMessages;
+            if exitOut then
+            begin
+              break;
+              Close;
+            end;
+            Application.ProcessMessages;
+            if p1 = p2 then
+              continue;
+            orderStep := 1;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid='
+              + dprid + ' '; // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set C=0 where  dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            adotemp.Close;
+            self.fromLabelcaptionC(clred);
+            // Tcolor4pCode[3] := 1; // 肯普链树开始点
+            adotemp.SQL.Text := 'update points set FC=' + inttostr(p2) +
+              ',C=1 where pcode=''' + Tcolor4pCode[p1] + ''' and dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            // adotemp.Close;
+            // adotemp.SQL.Text := 'update points set C=1 where ((pcode=''' + Tcolor4pCode[1] + ''') or (pcode=''' + Tcolor4pCode[2] + ''') or (pcode=''' + Tcolor4pCode[3] + ''') or (pcode=''' + Tcolor4pCode[4] + ''')) and dprid=' +
+            // dprid + ' ';
+            // adotemp.ExecSQL;
+            refreshoneP(inttostr(p2), Tcolor4pCode[p1], 1000, clred);
+
+            // looktime(-1);
+            if ((p1 = 4) and (p2 = 1)) then
+              Application.ProcessMessages;
+            isHaveSameColor := False; // 开始点的邻边
+            /// //////////////////////////////////////////////////////
+            // select e.* from edges as e where e.dprid=2  and e.relation
+            // and
+            // (select count(1) from  points as p where p.dprid=2  and p.fc=3
+            // and  (p.pcode=e.pcode1 or p.pcode=pcode2) ) >0
+            while not isHaveSameColor do
+            begin // 肯普链涟渏主体所在也乎
+              Application.ProcessMessages;
+              if exitOut then
+              begin
+                break;
+                Close;
+              end;
+              Application.ProcessMessages;
+              isHaveSameColor := False;
+              // looktime(-1);
+              ADOQuery3.Close;
+              ADOQuery3.SQL.Text :=
+                'select www.* from (select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pFC1, ' +
+                '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+                + dprid + ') as pFC2, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pF11, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pF12, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pC1, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pC2 ' + ' from edges where Relation ' +
+                ' and dprid=' + dprid +
+                ') as www where (1=1) and (pC1>0 or pC2>0) and (pF11<' +
+                inttostr(curPcount) + ' and  pF12<' + inttostr(curPcount) + ')'
+                + ' and ( pFC1=' + inttostr(p1) + ' or pFC1=' + inttostr(p2) +
+                ' or pFC2=' + inttostr(p1) + ' or pFC2=' + inttostr(p2) + ')';
+              // select www.* from
+              // (select edges.*,
+              // (select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pFC1,
+              // (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid=1) as pFC2
+              // (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pF11,
+              // (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pF12,
+              // (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pC1,
+              // (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pC2
+              // from edges where Relation  and dprid=1) as www
+              // where (1=1) and (pC1>0 or pC2>0) and (pF11<71 and  pF12<71) and ( pFC1=1 or pFC1=2 or pFC2=1 or pFC2=2)
+              ADOQuery3.Open;
+              ADOQuery3.First;
+              while not ADOQuery3.Eof do
+              begin
+
+                if (ADOQuery3.FieldByName('pFC1')
+                  .AsString = ADOQuery3.FieldByName('pFC2').AsString) then
+                begin
+
+                  if (ADOQuery3.FieldByName('pC1').AsInteger > 0) then
+                    if (ADOQuery3.FieldByName('pC2').AsInteger > 0) then
+                    begin
+                      isHaveSameColor := True;
+                      break;
+
+                    end;
+
+                  // if 1=2 then
+                  if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor4pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode[3])
+                    or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode
+                    [4])) and ((ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor4pCode[1]) or
+                    (ADOQuery3.FieldByName('pcode2').AsString = Tcolor4pCode[2])
+                    or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor4pCode
+                    [3]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor4pCode[4]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+
+                  end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode1').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP((inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode1').AsString, 1000, clred);
+                    // looktime(-1);
+                    // ADOQuery3.Next;
+                    // continue;
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode2').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP((inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode2').AsString, 1000, clred);
+                    // looktime(-1);
+                    // OQuery3.Next;
+                    // continue;
+                    isHaveSameColor := True;
+                    break;
+                  end;
+
+                end;
+                ADOQuery3.Next;
+              end;
+              if not isHaveSameColor then
+              // if ADOQuery3.RecordCount=0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+            end;
+            if not isHaveSameColor then
+            begin
+              Application.ProcessMessages;
+              break;
+            end;
+
+          end;
+          if not isHaveSameColor then
+          begin
+            // adotemp.Close;
+            // adotemp.SQL.Text :=
+            // 'update points set FC=C1248C1111 where  dprid=' + dprid + ' ';
+            // adotemp.ExecSQL;
+            adotemp.Close;
+            // Tcolor4pCode[3] := 1; // 肯普链树中心点
+            adotemp.SQL.Text := 'update points set FC=' + inttostr(p1) +
+              ' where pcode=''' + Tcolor4pCode[0] + ''' and dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            refreshoneP(inttostr(p1), Tcolor4pCode[0], 1000, clred);
+            self.savetoLabelcaption;
+            break;
+          end;
+        end;
+        self.fromLabelcaption;
+        if not isHaveSameColor then
+          showmessage('4环肯普链树，这个已经可解了')
+        else
+        begin
+          showmessage('4环肯普链树，仍然不可解');
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid=' +
+            dprid + ' '; // 手工调试时，将两个字段齐改才行
+          adotemp.ExecSQL;
+          break;
+        end;
+        // 4环肯普链树  必定1234  ,1243,1347,1324,1423,1432,每点变一次，不是仅变两次
+      end
+      else
+      begin
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set FC=' + temps[1] + ' where F1=' +
+          inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 1000);
+        refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 0,
+          clMoneyGreen);
+      end;
+    end;
+    if tempi = 5 then
+    begin
+      ADOQuery1.Close;
+      ADOQuery1.SQL.Text :=
+        'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+        + dprid + ') as pFC1, ' +
+        '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+        + dprid + ') as pFC2 ' + ' from edges where Relation ' + ' and dprid=' +
+        dprid + ' and (pcode1=''' + ADOQuery2.FieldByName('pcode').AsString +
+        ''' or pcode2=''' + ADOQuery2.FieldByName('pcode').AsString + ''')';
+      temps := '1234';
+      ADOQuery1.Open;
+      ADOQuery1.First;
+      while not ADOQuery1.Eof do
+      begin
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC1').AsString, '');
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC2').AsString, '');
+        ADOQuery1.Next;
+      end;
+      if temps = '' then
+      begin
+        // 5环肯普链树   必定121234
+        // showmessage('5环肯普链树   必定121234');
+        showmessage('5环肯普链树');
+        isOK := 0;
+
+        Tcolor5pCode[0] := ADOQuery2.FieldByName('pcode').AsString;
+        PPcode5ColorIndex[0] := 0;
+        // refreshoneP(inttostr(0), Tcolor4pCode[0], 3000, clgreen);
+        refreshoneP(inttostr(0), Tcolor5pCode[0], 0, clOlive);
+        // ('P54', 'P55', 'P18', 'P17', 'P99')
+        // 终于自建了一个点线状数据测试了，可能不符合现实世界的片状地图。测试点线状地图，只为测试肯普链用，结果也不知有没解。
+        ADOQuery1.First;
+        colorindex := 0;
+        while not ADOQuery1.Eof do
+        begin
+          colorindex := colorindex + 1;
+          // for colorindex := 1 to 5 do
+          begin
+            if ADOQuery1.FieldByName('pcode1').AsString <> Tcolor5pCode[0] then
+            begin
+              Tcolor5pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode1').AsString;
+              PPcode5ColorIndex[colorindex] := ADOQuery1.FieldByName('pFC1')
+                .AsInteger;
+              // break;
+            end;
+            if ADOQuery1.FieldByName('pcode2').AsString <> Tcolor5pCode[0] then
+            begin
+              Tcolor5pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode2').AsString;
+              PPcode5ColorIndex[colorindex] := ADOQuery1.FieldByName('pFC2')
+                .AsInteger;
+              // break;
+            end;
+          end;
+          ADOQuery1.Next;
+        end; // 以上为Tcolor4pCode[i]赋值
+        // 数据正常下，不是普遍无规律的  14,3,4,13,42
+        isHaveSameColor := False;
+        // C1248C1111 备份字段用也
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set C1248C1111=FC where  dprid=' +
+          dprid + ' ';
+        adotemp.ExecSQL;
+        refreshoneP(inttostr(PPcode5ColorIndex[1]), Tcolor5pCode[1], 0, cllime);
+        refreshoneP(inttostr(PPcode5ColorIndex[2]), Tcolor5pCode[2], 0,
+          clFuchsia);
+        refreshoneP(inttostr(PPcode5ColorIndex[3]), Tcolor5pCode[3], 0,
+          clyellow);
+        refreshoneP(inttostr(PPcode5ColorIndex[4]), Tcolor5pCode[4], 0,
+          clskyblue);
+        refreshoneP(inttostr(PPcode5ColorIndex[5]), Tcolor5pCode[5], 0,
+          clsilver);
+        // looktime(10000);
+        // looktime(-1);
+        /// ///////////////////////////////////////////////////////
+        self.savetoLabelcaption;
+        // colorindex   0  3  4  1  2  4    12123
+        for p1 := 1 to 5 do
+          for p2 := (p1 + 1) to 5 do
+            if (PPcode5ColorIndex[p1] = PPcode5ColorIndex[p2]) then
+            begin
+              if (p2 = (p1 + 2)) then
+              begin
+                Abacd_A := Tcolor5pCode[p1];
+                Abacd_Aa := Tcolor5pCode[p2];
+                Abacd_b := Tcolor5pCode[p1 + 1];
+                Abacd_c := Tcolor5pCode[(p2 + 1) mod 5];
+                Abacd_d := Tcolor5pCode[(p2 + 2) mod 5];
+                a := p1;
+                aa := p2;
+                b := p1 + 1;
+                c := (p2 + 1) mod 5;
+                d := (p2 + 2) mod 5;
+                if c = 0 then
+                  c := 5;
+                if d = 0 then
+                  d := 5;
+                break;
+              end;
+              if (p2 = (p1 + 3)) then
+              begin
+                Abacd_Aa := Tcolor5pCode[p1];
+                Abacd_A := Tcolor5pCode[p2];
+                Abacd_b := Tcolor5pCode[(p2 + 1) mod 5];
+                Abacd_c := Tcolor5pCode[(p1 + 1) mod 5];
+                Abacd_d := Tcolor5pCode[(p1 + 2) mod 5];
+                a := p2;
+                aa := p1;
+                b := (p2 + 1) mod 5;
+                c := (p1 + 1) mod 5;
+                d := (p1 + 2) mod 5;
+                if b = 0 then
+                  b := 5;
+                if c = 0 then
+                  c := 5;
+                if d = 0 then
+                  d := 5;
+                break;
+              end;
+            end;
+        if 1 = 2 then
+        begin
+          if isTest5ChainReturnOK = 1 then
+          // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          begin
+            /// ////测试五环用
+            // 这里可以update具体颜值，以测试五环用
+            adotemp.Close;
+            adotemp.SQL.Text :=
+              'update points set FC=1,C1248C1111=1 where  pcode=''P82'' and  dprid='
+              + dprid + ' ';
+            // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          end;
+          if isTest5ChainReturnOK = 0 then
+          // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          begin
+            /// ////测试五环用
+            // 这里可以update具体颜值，以测试五环用
+            adotemp.Close;
+            adotemp.SQL.Text :=
+              'update points set FC=3,C1248C1111=3 where  pcode=''P82'' and  dprid='
+              + dprid + ' ';
+            // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          end;
+        end;
+        /// /////////////////////////////////
+        Application.ProcessMessages;
+        if exitOut then
+        begin
+          break;
+          Close;
+        end;
+        Application.ProcessMessages;
+        for ijk := 1 to 4 do
+        begin
+          if ijk = 1 then
+          begin
+            p2 := b; // 原色点
+            p1 := c; // 取其余色时
+          end;
+          if ijk = 2 then
+          begin
+            p2 := c; // 原色点
+            p1 := b; // 取其余色时
+          end;
+          if ijk = 3 then
+          begin
+            p2 := b; // 原色点
+            p1 := d; // 取其余色时
+          end;
+          if ijk = 4 then
+          begin
+            p2 := d; // 原色点
+            p1 := b; // 取其余色时
+          end;
+
+          // 有一个成立就行了
+          Application.ProcessMessages;
+          if exitOut then
+          begin
+            break;
+            Close;
+          end;
+          Application.ProcessMessages;
+          // if p1 = p2 then
+          // continue;
+
+          // if not(((p2 = b) and (p1 = c)) or ((p2 = b) and (p1 = d))) then
+          // continue; // 只有两种情况可向下，这种思维阅读记忆法
+
+          orderStep := 1;
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid=' +
+            dprid + ' ';
+          // 手工调试时，将两个字段齐改才行
+          adotemp.ExecSQL;
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set C=0 where  dprid=' +
+            dprid + ' ';
+          adotemp.ExecSQL;
+          adotemp.Close;
+          self.fromLabelcaptionC(clred);
+          // Tcolor4pCode[3] := 1; // 肯普链树开始点     PPcode5ColorIndex[p2]
+          adotemp.SQL.Text := 'update points set FC=' +
+            inttostr(PPcode5ColorIndex[p2]) + ',C=1 where pcode=''' +
+            Tcolor5pCode[p1] + ''' and dprid=' + dprid + ' ';
+          adotemp.ExecSQL;
+          // adotemp.Close;
+          // adotemp.SQL.Text := 'update points set C=1 where ((pcode=''' + Tcolor4pCode[1] + ''') or (pcode=''' + Tcolor4pCode[2] + ''') or (pcode=''' + Tcolor4pCode[3] + ''') or (pcode=''' + Tcolor4pCode[4] + ''')) and dprid=' +
+          // dprid + ' ';
+          // adotemp.ExecSQL;
+          refreshoneP(inttostr(PPcode5ColorIndex[p2]), Tcolor5pCode[p1],
+            1000, clred);
+
+          // looktime(-1);
+          // if ((p1 = 4) and (p2 = 1)) then
+          // Application.ProcessMessages;
+          isHaveSameColor := False; // 开始点的邻边
+          /// //////////////////////////////////////////////////////
+          // select e.* from edges as e where e.dprid=2  and e.relation
+          // and
+          // (select count(1) from  points as p where p.dprid=2  and p.fc=3
+          // and  (p.pcode=e.pcode1 or p.pcode=pcode2) ) >0
+          // while not isHaveSameColor do
+          while not isHaveSameColor do
+          begin // 肯普链涟渏主体所在也乎
+            Application.ProcessMessages;
+            if exitOut then
+            begin
+              break;
+              Close;
+            end;
+            Application.ProcessMessages;
+            isHaveSameColor := False;
+            isOK := 0;
+            // looktime(-1);
+            ADOQuery3.Close;
+            ADOQuery3.SQL.Text :=
+              'select www.* from (select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+              + dprid + ') as pFC1, ' +
+              '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+              + dprid + ') as pFC2, ' +
+              ' (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+              + dprid + ') as pF11, ' +
+              ' (select p.F1  from points as p where p.pcode=edges.pcode2 and p.dprid='
+              + dprid + ') as pF12, ' +
+              ' (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid='
+              + dprid + ') as pC1, ' +
+              ' (select p.C  from points as p where p.pcode=edges.pcode2 and p.dprid='
+              + dprid + ') as pC2 ' + ' from edges where Relation ' +
+              ' and dprid=' + dprid +
+              ') as www where (1=1) and (pC1>0 or pC2>0) and (pF11<' +
+              inttostr(curPcount) + ' and  pF12<' + inttostr(curPcount) + ')' +
+              ' and ( pFC1=' + inttostr(PPcode5ColorIndex[p1]) + ' or pFC1=' +
+              inttostr(PPcode5ColorIndex[p2]) + ' or pFC2=' +
+              inttostr(PPcode5ColorIndex[p1]) + ' or pFC2=' +
+              inttostr(PPcode5ColorIndex[p2]) + ')';
+            ADOQuery3.Open;
+            ADOQuery3.First;
+            while not ADOQuery3.Eof do
+            begin
+              if ADOQuery3.FieldByName('pcode1').AsString = 'P3' then
+                if ADOQuery3.FieldByName('pcode2').AsString = 'P12' then
+                  Application.ProcessMessages;
+
+              if (ADOQuery3.FieldByName('pFC1').AsString = ADOQuery3.FieldByName
+                ('pFC2').AsString) then
+              begin
+
+                if (ADOQuery3.FieldByName('pC1').AsInteger > 0) then
+                  if (ADOQuery3.FieldByName('pC2').AsInteger > 0) then
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                // if 1=2 then
+                if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[1]
+                  ) or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                  [2]) or (ADOQuery3.FieldByName('pcode1')
+                  .AsString = Tcolor5pCode[3]) or
+                  (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[4])
+                  or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[5]
+                  )) and ((ADOQuery3.FieldByName('pcode2')
+                  .AsString = Tcolor5pCode[1]) or
+                  (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[2])
+                  or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[3]
+                  ) or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                  [4]) or (ADOQuery3.FieldByName('pcode2')
+                  .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                begin
+                  isHaveSameColor := True;
+                  break;
+                end;
+                if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                  if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                  if (((ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                begin
+                  orderStep := orderStep + 1;
+                  adotemp.Close;
+                  adotemp.SQL.Text := 'update points set FC=' +
+                    (inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') + ',C='
+                    + inttostr(orderStep) + ' where pcode=''' +
+                    ADOQuery3.FieldByName('pcode1').AsString + ''' and dprid=' +
+                    dprid + ' ';
+                  adotemp.ExecSQL;
+                  refreshoneP((inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                    ADOQuery3.FieldByName('pcode1').AsString, 1000, clred);
+                  // looktime(-1);
+                  // ADOQuery3.Next;
+                  // continue;
+                  // isHaveSameColor := True;
+                  isOK := isOK + 1;
+                  if ADOQuery3.FieldByName('pcode1').AsString = 'P1' then
+                    Application.ProcessMessages;
+                  break;
+                end;
+                if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                begin
+                  orderStep := orderStep + 1;
+                  adotemp.Close;
+                  adotemp.SQL.Text := 'update points set FC=' +
+                    (inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') + ',C='
+                    + inttostr(orderStep) + ' where pcode=''' +
+                    ADOQuery3.FieldByName('pcode2').AsString + ''' and dprid=' +
+                    dprid + ' ';
+                  adotemp.ExecSQL;
+                  refreshoneP((inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                    ADOQuery3.FieldByName('pcode2').AsString, 1000, clred);
+                  // looktime(-1);
+                  // OQuery3.Next;
+                  // continue;
+                  // isHaveSameColor := True;
+                  isOK := isOK + 1;
+                  if ADOQuery3.FieldByName('pcode2').AsString = 'P1' then
+                    Application.ProcessMessages;
+                  break;
+                end;
+              end;
+              ADOQuery3.Next;
+            end;
+            if isHaveSameColor then
+            // if ADOQuery3.RecordCount=0 then
+            begin
+              Application.ProcessMessages;
+              break;
+            end;
+            if isOK = 0 then
+            begin
+              Application.ProcessMessages;
+              break;
+            end;
+          end;
+
+        end;
+
+        if 1 = 2 then
+          if isHaveSameColor then // 如果上面的不成
+          begin
+            /// /////////////////////////////////
+            p2 := b; // 原色点
+            p1 := d; // 取其余色时
+            // 有一个成立就行了
+            Application.ProcessMessages;
+            if exitOut then
+            begin
+              break;
+              Close;
+            end;
+            Application.ProcessMessages;
+            // if p1 = p2 then
+            // continue;
+
+            // if not(((p2 = b) and (p1 = c)) or ((p2 = b) and (p1 = d))) then
+            // continue; // 只有两种情况可向下，这种思维阅读记忆法
+
+            orderStep := 1;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid='
+              + dprid + ' ';
+            // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set C=0 where  dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            adotemp.Close;
+            self.fromLabelcaptionC(clred);
+            // Tcolor4pCode[3] := 1; // 肯普链树开始点     PPcode5ColorIndex[p2]
+            adotemp.SQL.Text := 'update points set FC=' +
+              inttostr(PPcode5ColorIndex[p2]) + ',C=1 where pcode=''' +
+              Tcolor5pCode[p1] + ''' and dprid=' + dprid + ' ';
+            adotemp.ExecSQL;
+            // adotemp.Close;
+            // adotemp.SQL.Text := 'update points set C=1 where ((pcode=''' + Tcolor4pCode[1] + ''') or (pcode=''' + Tcolor4pCode[2] + ''') or (pcode=''' + Tcolor4pCode[3] + ''') or (pcode=''' + Tcolor4pCode[4] + ''')) and dprid=' +
+            // dprid + ' ';
+            // adotemp.ExecSQL;
+            refreshoneP(inttostr(PPcode5ColorIndex[p2]), Tcolor5pCode[p1],
+              1000, clred);
+
+            // looktime(-1);
+            // if ((p1 = 4) and (p2 = 1)) then
+            // Application.ProcessMessages;
+            isHaveSameColor := False; // 开始点的邻边
+            /// //////////////////////////////////////////////////////
+            // select e.* from edges as e where e.dprid=2  and e.relation
+            // and
+            // (select count(1) from  points as p where p.dprid=2  and p.fc=3
+            // and  (p.pcode=e.pcode1 or p.pcode=pcode2) ) >0
+            // while not isHaveSameColor do
+            while not isHaveSameColor do
+            begin // 肯普链涟渏主体所在也乎
+              Application.ProcessMessages;
+              if exitOut then
+              begin
+                break;
+                Close;
+              end;
+              Application.ProcessMessages;
+              isHaveSameColor := False;
+              isOK := 0;
+              // looktime(-1);
+              ADOQuery3.Close;
+              ADOQuery3.SQL.Text :=
+                'select www.* from (select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pFC1, ' +
+                '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+                + dprid + ') as pFC2, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pF11, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pF12, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pC1, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pC2 ' + ' from edges where Relation ' +
+                ' and dprid=' + dprid +
+                ') as www where (1=1) and (pC1>0 or pC2>0) and (pF11<' +
+                inttostr(curPcount) + ' and  pF12<' + inttostr(curPcount) + ')'
+                + ' and ( pFC1=' + inttostr(PPcode5ColorIndex[p1]) + ' or pFC1='
+                + inttostr(PPcode5ColorIndex[p2]) + ' or pFC2=' +
+                inttostr(PPcode5ColorIndex[p1]) + ' or pFC2=' +
+                inttostr(PPcode5ColorIndex[p2]) + ')';
+              ADOQuery3.Open;
+              ADOQuery3.First;
+              while not ADOQuery3.Eof do
+              begin
+                if ADOQuery3.FieldByName('pcode1').AsString = 'P3' then
+                  if ADOQuery3.FieldByName('pcode2').AsString = 'P12' then
+                    Application.ProcessMessages;
+
+                if (ADOQuery3.FieldByName('pFC1')
+                  .AsString = ADOQuery3.FieldByName('pFC2').AsString) then
+                begin
+
+                  if (ADOQuery3.FieldByName('pC1').AsInteger > 0) then
+                    if (ADOQuery3.FieldByName('pC2').AsInteger > 0) then
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  // if 1=2 then
+                  if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[5])) and
+                    ((ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[1]
+                    ) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                    if (((ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor5pCode[1]) or
+                      (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                      [2]) or (ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor5pCode[3]) or
+                      (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                      [4]) or (ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                    if (((ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor5pCode[1]) or
+                      (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                      [2]) or (ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor5pCode[3]) or
+                      (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                      [4]) or (ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode1').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP
+                      ((inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode1').AsString, 1000, clred);
+                    // looktime(-1);
+                    // ADOQuery3.Next;
+                    // continue;
+                    // isHaveSameColor := True;
+                    isOK := isOK + 1;
+                    if ADOQuery3.FieldByName('pcode1').AsString = 'P1' then
+                      Application.ProcessMessages;
+                    break;
+                  end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode2').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP
+                      ((inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode2').AsString, 1000, clred);
+                    // looktime(-1);
+                    // OQuery3.Next;
+                    // continue;
+                    // isHaveSameColor := True;
+                    isOK := isOK + 1;
+                    if ADOQuery3.FieldByName('pcode2').AsString = 'P1' then
+                      Application.ProcessMessages;
+                    break;
+                  end;
+                end;
+                ADOQuery3.Next;
+              end;
+              if isHaveSameColor then
+              // if ADOQuery3.RecordCount=0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+              if isOK = 0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+            end;
+
+          end; // 如果上面的不成
+
+        if not isHaveSameColor then
+        begin
+          // adotemp.Close;
+          // adotemp.SQL.Text :=
+          // 'update points set FC=C1248C1111 where  dprid=' + dprid + ' ';
+          // adotemp.ExecSQL;
+          adotemp.Close;
+          // Tcolor4pCode[3] := 1; // 肯普链树中心点
+          adotemp.SQL.Text := 'update points set FC=' +
+            inttostr(PPcode5ColorIndex[p1]) + ' where pcode=''' + Tcolor5pCode
+            [0] + ''' and dprid=' + dprid + ' ';
+          adotemp.ExecSQL;
+          refreshoneP(inttostr(PPcode5ColorIndex[p1]), Tcolor5pCode[0],
+            1000, clred);
+          self.savetoLabelcaption;
+
+        end;
+
+        self.fromLabelcaption;
+        if not isHaveSameColor then
+          showmessage('5环肯普链树，这个已经可解了')
+        else
+        begin
+          showmessage('5环肯普链树，仍然不可解');
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid=' +
+            dprid + ' ';
+          // 手工调试时，将两个字段齐改才行
+          adotemp.ExecSQL;
+          break;
+        end;
+        // 4环肯普链树  必定1234  ,1243,1347,1324,1423,1432,每点变一次，不是仅变两次
+
+        // 5环肯普链树   必定121234
+      end
+      else
+      begin
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set FC=' + temps[1] + ' where F1=' +
+          inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 1000);
+        refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 0,
+          clMoneyGreen);
+      end;
+    end;
+  end;
+
+  refreshhClick(nil);
+  AutorefreshALLP;
+  showmessage('ok');
+end;
+
+procedure TFC.KePuPlay5circleClick(Sender: TObject);
+var
+  p1, p2, p3, p4, p5, p6, pp6i, tempi: Integer;
+  j1, j2, j3, j4, j5, j6: Integer;
+  i00, i01, i02, i03, i04, i05, i06, i07, i08, i09: Integer;
+  PP6: array [1 .. 6] of Integer;
+  PPcode6: array [1 .. 6] of String;
+  RResult, pcode1, pcode2, temps: string;
+  pindex1, pindex2: Integer;
+  ok, notok: boolean;
+  Tcolor4pCode: array [0 .. 4] of string;
+
+  colorindex, orderStep, ijk, stept: Integer;
+  isHaveSameColor: boolean;
+  Tcolor5pCode: array [0 .. 5] of string; // Tcolor5pCode
+  PPcode5ColorIndex: array [0 .. 5] of Integer; // ColorIndex
+  Abacd_A, Abacd_b, Abacd_Aa, Abacd_c, Abacd_d: string; // Tcolor5pCode
+  a, b, aa, c, d: Integer; // PPcode5Index
+  isTest5Chain: Integer; // 实例且改代码才可测五环肯普链涟漪
+  isOK: Integer;
+begin
+
+  showmessage('此为演示数据中弹出五环肯普链的例子，要代码来模拟才出现，现实中我找不到实例，演示五环肯普链用');
+
+  isTest5Chain := 1; // 实例且改代码才可测五环肯普链涟漪
+  // isTest5Chain := 0; // 实例且改代码才可测五环肯普链涟漪
+  exitOut := False;
+  if RadioButton1.Checked then
+    TRzButton(Sender).Tag := 1
+  else
+    TRzButton(Sender).Tag := 2;
+  // Image1.Picture.LoadFromFile(extractfilepath(paramstr(0)) + '反例.jpg');
+
+  RResult := '';
+
+  N6Click(nil);
+
+  ADOQuery2.Close;
+  ADOQuery2.SQL.Text := 'update points set CCC=0,F1=0,C=0,FC=0 where  dprid=' +
+    dprid + ' ';
+  ADOQuery2.ExecSQL;
+
+  ADOQuery2.Close;
+  ADOQuery2.SQL.Text := 'select  count(1) as pc from points where 1=1 and F1=0 '
+    + ' and dprid=' + dprid + ' ';
+  ADOQuery2.Open;
+  PCount := ADOQuery2.FieldByName('pc').AsInteger;
+  /// ////测试五环用   隐去一点
+  if isTest5Chain = 1 then
+  // if 1 = 2 then
+  begin
+    PCount := PCount - 1;
+    adotemp.Close;
+    adotemp.SQL.Text :=
+      'update points set dprid=2 where pcode=''P0'' and dprid=' + dprid + ' ';
+    // 测试时P0正确是dprid=1，现暂动态改为2来测试
+    adotemp.ExecSQL;
+    adotemp.Close;
+    adotemp.SQL.Text :=
+      'update edges set relation=0 where pcode1=''P0'' and dprid=' + dprid +
+      ' '; // 测试时P0正确是dprid=1，现暂动态改为2来测试  ,仅五边P1,P2,P3,P4,P5
+    adotemp.ExecSQL;
+  end;
+  /// ////测试五环用
+  curPcount := PCount + 1;
+
+  while curPcount > 6 do
+  begin
+    curPcount := curPcount - 1;
+    if curPcount = 6 then
+    begin
+      ADOQuery2.Close;
+      ADOQuery2.SQL.Text := 'select  * from points where 1=1 and F1=0 ' +
+        ' and dprid=' + dprid + ' ';
+      ADOQuery2.Open;
+      ADOQuery2.First;
+      tempi := 0;
+      while not ADOQuery2.Eof do
+      begin
+        tempi := tempi + 1;
+        ADOQuery2.Edit;
+        ADOQuery2.FieldByName('F1').AsInteger := tempi;
+        ADOQuery2.Post;
+        ADOQuery2.Next;
+      end;
+      break;
+    end;
+
+    ADOQuery1.Close;
+    ADOQuery1.SQL.Text :=
+      'select ww.* from (select w.pcode1,count(1) as pc from (select pcode1,pcode2 from edges where Relation '
+      + ' and dprid=' + dprid +
+      ' and pcode1 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) +
+      ') and pcode2 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) + ')  ' +
+      ' union select pcode2,pcode1 from edges where relation and dprid=' + dprid
+      + ' and pcode1 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) +
+      ') and pcode2 in (select pcode from points where  dprid=' + dprid +
+      'and F1<' + inttostr(curPcount) + ')  ' +
+    // ' ) as w group by w.pcode1) as ww order by ww.pc';  notok  //测试四环，五环
+    // ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1';  //ookk
+    // ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1 desc';  //测试四环，五环
+      ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1'; // ookk
+    // ' ) as w group by w.pcode1) as ww order by ww.pc,ww.pcode1 desc';  //测试四环，五环
+    // 上面两句SQL有个order by ww.pcode1确不同，有者，可解那个双四环，无者，第二个不可解
+    // 无者，可用于测试五环乎，同样算法，因为一个order出现可解与不可解之大事
+    ADOQuery1.Open;
+    if ADOQuery1.FieldByName('pc').AsInteger > 5 then
+    begin
+      showmessage('数据有错了');
+
+    end;
+
+    ADOQuery2.Close;
+    ADOQuery2.SQL.Text := 'update points set F1=' + inttostr(curPcount) +
+      ',CCC=' + ADOQuery1.FieldByName('pc').AsString + ' where pcode=''' +
+      ADOQuery1.FieldByName('pcode1').AsString + ''' and dprid=' + dprid + ' ';
+    ADOQuery2.ExecSQL;
+    // exit;
+
+  end;
+  if curPcount = 6 then
+  // showmessage(inttostr(PCount));
+  begin
+    // 九重循环，九层之台，起于累土，千里之行，始于足下
+    ok := False;
+    notok := True;
+
+    ADOQuery1.Close;
+    ADOQuery1.SQL.Text :=
+      'select edges.*,(select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+      + dprid + ') as pF1, ' +
+      '  (select p.F1  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+      + dprid + ') as pF2 ' + ' from edges where Relation ' + ' and dprid=' +
+      dprid + ' ';
+    ADOQuery1.Open;
+
+    for p1 := 1 to 4 do
+    begin
+      for p2 := 1 to 4 do
+      begin
+        for p3 := 1 to 4 do
+        begin
+          for p4 := 1 to 4 do
+          begin
+            for p5 := 1 to 4 do
+            begin
+              for p6 := 1 to 4 do
+              begin
+                PP6[1] := p1;
+                PP6[2] := p2;
+                PP6[3] := p3;
+                PP6[4] := p4;
+                PP6[5] := p5;
+                PP6[6] := p6;
+                ok := True;
+                notok := True;
+                // ADOQuery1.Close;
+                // ADOQuery1.SQL.Text :=
+                // 'select edges.*,(select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                // + dprid + ') as pF1, ' +
+                // '  (select p.F1  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+                // + dprid + ') as pF2 ' + ' from edges where Relation ' +
+                // ' and dprid=' + dprid + ' ';
+                // ADOQuery1.Open;
+                ADOQuery1.First;
+                while not ADOQuery1.Eof do
+                begin
+                  // pcode1 := ADOQuery1.FieldByName('pF1').AsString;
+                  // pcode2 := ADOQuery1.FieldByName('pF2').AsString;
+                  pindex1 := ADOQuery1.FieldByName('pF1').AsInteger;
+                  pindex2 := ADOQuery1.FieldByName('pF2').AsInteger;
+                  if ((pindex1 > 0) and (pindex1 < 7)) then
+                    if ((pindex2 > 0) and (pindex2 < 7)) then
+                      if PP6[pindex1] = PP6[pindex2] then
+                      begin
+                        notok := True;
+                        ok := False;
+                        break;
+                      end;
+                  ADOQuery1.Next;
+                end;
+                if ok then
+                  for pp6i := 1 to 6 do
+                  begin
+
+                    ADOQuery2.Close;
+                    ADOQuery2.SQL.Text := 'update points set FC=' +
+                      inttostr(PP6[pp6i]) + ' where F1=' + inttostr(pp6i) +
+                      ' and dprid=' + dprid + ' ';
+                    ADOQuery2.ExecSQL;
+
+                  end;
+
+                if ok then
+                  break;
+              end;
+              if ok then
+                break;
+            end;
+            if ok then
+              break;
+          end;
+          if ok then
+            break;
+        end;
+        if ok then
+          break;
+      end;
+      if ok then
+        break;
+    end;
+  end;
+  refreshhClick(nil); // 刷新图中各点
+  if not ok then
+  begin
+    showmessage('此图肯定没有四色解');
+    exit;
+  end;
+  stept := trunc(stepTime.Value);
+  // 这里若要刷新开始六点颜值，写代码，不想写，用处不大乎
+  adotemp.Close;
+  adotemp.SQL.Text := 'select * from points  where F1<7 and dprid=' +
+    dprid + ' ';
+  adotemp.Open;
+  adotemp.First;
+  while not adotemp.Eof do
+  // for pp6i := 1 to 6 do
+  begin
+    // PPcode6[pp6i] := adotemp.FieldByName('pcode').AsString;
+    refreshoneP(adotemp.FieldByName('fc').AsString, adotemp.FieldByName('pcode')
+      .AsString, 0, clMoneyGreen);
+    adotemp.Next;
+  end;
+
+  while curPcount < (PCount + 2) do
+  // while curPcount < PCount do
+  begin
+    Application.ProcessMessages;
+    if exitOut then
+    begin
+      break;
+      Close;
+    end;
+    Application.ProcessMessages;
+    curPcount := curPcount + 1;
+    if isTest5Chain = 1 then
+      /// ////测试五环用
+      if (curPcount = (PCount + 1)) then
+      begin
+        if 1 = 1 then
+        // if 1 = 2 then
+        begin
+          // curPcount := curPcount + 1;
+          adotemp.Close;
+          adotemp.SQL.Text :=
+            'update points set dprid=1,CCC=5,F1=118,FC=0 where pcode=''P0'' and dprid=2';
+          // 测试时P0正确是dprid=1，现暂动态改为2来测试
+          adotemp.ExecSQL;
+          adotemp.Close;
+          adotemp.SQL.Text :=
+            'update edges set relation=1 where (ecode=''P0P1'' or ecode=''P0P2'' or ecode=''P0P3''  or  ecode=''P0P4''  or ecode=''P0P5'') and dprid='
+            + dprid + ' '; // 测试时P0正确是dprid=1，现暂动态改为2来测试  ,仅五边P1,P2,P3,P4,P5
+          adotemp.ExecSQL;
+
+        end;
+      end;
+    /// ////测试五环用
+
+    ADOQuery2.Close;
+    ADOQuery2.SQL.Text := 'select  * from points where 1=1 and F1= ' +
+      inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+    ADOQuery2.Open;
+    tempi := ADOQuery2.FieldByName('CCC').AsInteger;
+    if ADOQuery2.FieldByName('pcode').AsString = 'P96' then
+      Application.ProcessMessages; // 断点查错，果然不顺也
+    if tempi < 4 then
+    begin
+
+      ADOQuery1.Close;
+      ADOQuery1.SQL.Text :=
+        'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+        + dprid + ') as pFC1, ' +
+        '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+        + dprid + ') as pFC2 ' + ' from edges where Relation ' + ' and dprid=' +
+        dprid + ' and (pcode1=''' + ADOQuery2.FieldByName('pcode').AsString +
+        ''' or pcode2=''' + ADOQuery2.FieldByName('pcode').AsString + ''')';
+      temps := '1234';
+      ADOQuery1.Open;
+      ADOQuery1.First;
+      while not ADOQuery1.Eof do
+      begin
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC1').AsString, '');
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC2').AsString, '');
+        ADOQuery1.Next;
+      end;
+      if temps = '' then
+      begin
+        showmessage('小于4的，可能有错了');
+      end
+      else
+      begin
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set FC=' + temps[1] + ' where F1=' +
+          inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 1000);
+        refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 0,
+          clMoneyGreen);
+      end;
+    end;
+    if tempi = 4 then
+    begin
+      ADOQuery1.Close;
+      ADOQuery1.SQL.Text :=
+        'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+        + dprid + ') as pFC1, ' +
+        '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+        + dprid + ') as pFC2 ' + ' from edges where Relation ' + ' and dprid=' +
+        dprid + ' and (pcode1=''' + ADOQuery2.FieldByName('pcode').AsString +
+        ''' or pcode2=''' + ADOQuery2.FieldByName('pcode').AsString + ''')';
+      temps := '1234';
+      ADOQuery1.Open;
+      ADOQuery1.First;
+      while not ADOQuery1.Eof do
+      begin
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC1').AsString, '');
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC2').AsString, '');
+        ADOQuery1.Next;
+      end;
+      if temps = '' then
+      begin
+        // 4环肯普链树  必定1234  ,1243,1347,1324,1423,1432,每点变一次，不是仅变两次
+        showmessage('4环肯普链树');
+        // showmessage('4环肯普链树  必定1234');
+        // refreshhClick(nil); // 刷新图中各点
+        Tcolor4pCode[0] := ADOQuery2.FieldByName('pcode').AsString;
+        // refreshoneP(inttostr(0), Tcolor4pCode[0], 3000, clgreen);
+        refreshoneP(inttostr(0), Tcolor4pCode[0], 0, clOlive);
+        // ('P54', 'P55', 'P18', 'P17', 'P99')
+        // 终于自建了一个点线状数据测试了，可能不符合现实世界的片状地图。测试点线状地图，只为测试肯普链用，结果也不知有没解。
+        ADOQuery1.First;
+        while not ADOQuery1.Eof do
+        begin
+          for colorindex := 1 to 4 do
+          begin
+            if ADOQuery1.FieldByName('pFC1').AsInteger = colorindex then
+              Tcolor4pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode1').AsString;
+            if ADOQuery1.FieldByName('pFC2').AsInteger = colorindex then
+              Tcolor4pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode2').AsString;
+          end;
+          ADOQuery1.Next;
+        end; // 以上为Tcolor4pCode[i]赋值
+        // 数据正常下，不是普遍无规律的  14,3,4,13,42
+        isHaveSameColor := False;
+        // C1248C1111 备份字段用也
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set C1248C1111=FC where  dprid=' +
+          dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(inttostr(1), Tcolor4pCode[1], 1000, clYellow);
+        // refreshoneP(inttostr(2), Tcolor4pCode[2], 1000, clblue);
+        // refreshoneP(inttostr(3), Tcolor4pCode[3], 1000, clLime);
+        // refreshoneP(inttostr(4), Tcolor4pCode[4], 1000, clFuchsia);
+        refreshoneP(inttostr(1), Tcolor4pCode[1], 0, cllime);
+        refreshoneP(inttostr(2), Tcolor4pCode[2], 0, clFuchsia);
+        refreshoneP(inttostr(3), Tcolor4pCode[3], 0, clyellow);
+        refreshoneP(inttostr(4), Tcolor4pCode[4], 0, clskyblue);
+        // looktime(10000);
+        // looktime(-1);
+        /// ///////////////////////////////////////////////////////
+        self.savetoLabelcaption;
+        for p1 := 1 to 4 do // 原色点
+        begin
+          for p2 := 1 to 4 do // 取其余色时
+          begin // 有一个成立就行了
+            Application.ProcessMessages;
+            if exitOut then
+            begin
+              break;
+              Close;
+            end;
+            Application.ProcessMessages;
+            if p1 = p2 then
+              continue;
+            orderStep := 1;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid='
+              + dprid + ' '; // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set C=0 where  dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            adotemp.Close;
+            self.fromLabelcaptionC(clred);
+            // Tcolor4pCode[3] := 1; // 肯普链树开始点
+            adotemp.SQL.Text := 'update points set FC=' + inttostr(p2) +
+              ',C=1 where pcode=''' + Tcolor4pCode[p1] + ''' and dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            // adotemp.Close;
+            // adotemp.SQL.Text := 'update points set C=1 where ((pcode=''' + Tcolor4pCode[1] + ''') or (pcode=''' + Tcolor4pCode[2] + ''') or (pcode=''' + Tcolor4pCode[3] + ''') or (pcode=''' + Tcolor4pCode[4] + ''')) and dprid=' +
+            // dprid + ' ';
+            // adotemp.ExecSQL;
+            refreshoneP(inttostr(p2), Tcolor4pCode[p1], 1000, clred);
+
+            // looktime(-1);
+            if ((p1 = 4) and (p2 = 1)) then
+              Application.ProcessMessages;
+            isHaveSameColor := False; // 开始点的邻边
+            /// //////////////////////////////////////////////////////
+            // select e.* from edges as e where e.dprid=2  and e.relation
+            // and
+            // (select count(1) from  points as p where p.dprid=2  and p.fc=3
+            // and  (p.pcode=e.pcode1 or p.pcode=pcode2) ) >0
+            while not isHaveSameColor do
+            begin // 肯普链涟渏主体所在也乎
+              Application.ProcessMessages;
+              if exitOut then
+              begin
+                break;
+                Close;
+              end;
+              Application.ProcessMessages;
+              isHaveSameColor := False;
+              // looktime(-1);
+              ADOQuery3.Close;
+              ADOQuery3.SQL.Text :=
+                'select www.* from (select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pFC1, ' +
+                '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+                + dprid + ') as pFC2, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pF11, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pF12, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pC1, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pC2 ' + ' from edges where Relation ' +
+                ' and dprid=' + dprid +
+                ') as www where (1=1) and (pC1>0 or pC2>0) and (pF11<' +
+                inttostr(curPcount) + ' and  pF12<' + inttostr(curPcount) + ')'
+                + ' and ( pFC1=' + inttostr(p1) + ' or pFC1=' + inttostr(p2) +
+                ' or pFC2=' + inttostr(p1) + ' or pFC2=' + inttostr(p2) + ')';
+              // select www.* from
+              // (select edges.*,
+              // (select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pFC1,
+              // (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid=1) as pFC2
+              // (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pF11,
+              // (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pF12,
+              // (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pC1,
+              // (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid=1) as pC2
+              // from edges where Relation  and dprid=1) as www
+              // where (1=1) and (pC1>0 or pC2>0) and (pF11<71 and  pF12<71) and ( pFC1=1 or pFC1=2 or pFC2=1 or pFC2=2)
+              ADOQuery3.Open;
+              ADOQuery3.First;
+              while not ADOQuery3.Eof do
+              begin
+
+                if (ADOQuery3.FieldByName('pFC1')
+                  .AsString = ADOQuery3.FieldByName('pFC2').AsString) then
+                begin
+
+                  if (ADOQuery3.FieldByName('pC1').AsInteger > 0) then
+                    if (ADOQuery3.FieldByName('pC2').AsInteger > 0) then
+                    begin
+                      isHaveSameColor := True;
+                      break;
+
+                    end;
+
+                  // if 1=2 then
+                  if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor4pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode[3])
+                    or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor4pCode
+                    [4])) and ((ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor4pCode[1]) or
+                    (ADOQuery3.FieldByName('pcode2').AsString = Tcolor4pCode[2])
+                    or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor4pCode
+                    [3]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor4pCode[4]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+
+                  end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode1').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP((inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode1').AsString, 1000, clred);
+                    // looktime(-1);
+                    // ADOQuery3.Next;
+                    // continue;
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode2').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP((inttostr(p1) + inttostr(p2))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode2').AsString, 1000, clred);
+                    // looktime(-1);
+                    // OQuery3.Next;
+                    // continue;
+                    isHaveSameColor := True;
+                    break;
+                  end;
+
+                end;
+                ADOQuery3.Next;
+              end;
+              if not isHaveSameColor then
+              // if ADOQuery3.RecordCount=0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+            end;
+            if not isHaveSameColor then
+            begin
+              Application.ProcessMessages;
+              break;
+            end;
+
+          end;
+          if not isHaveSameColor then
+          begin
+            // adotemp.Close;
+            // adotemp.SQL.Text :=
+            // 'update points set FC=C1248C1111 where  dprid=' + dprid + ' ';
+            // adotemp.ExecSQL;
+            adotemp.Close;
+            // Tcolor4pCode[3] := 1; // 肯普链树中心点
+            adotemp.SQL.Text := 'update points set FC=' + inttostr(p1) +
+              ' where pcode=''' + Tcolor4pCode[0] + ''' and dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            refreshoneP(inttostr(p1), Tcolor4pCode[0], 1000, clred);
+            self.savetoLabelcaption;
+            break;
+          end;
+        end;
+        self.fromLabelcaption;
+        if not isHaveSameColor then
+          showmessage('4环肯普链树，这个已经可解了')
+        else
+        begin
+          showmessage('4环肯普链树，仍然不可解');
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid=' +
+            dprid + ' '; // 手工调试时，将两个字段齐改才行
+          adotemp.ExecSQL;
+          break;
+        end;
+        // 4环肯普链树  必定1234  ,1243,1347,1324,1423,1432,每点变一次，不是仅变两次
+      end
+      else
+      begin
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set FC=' + temps[1] + ' where F1=' +
+          inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 1000);
+        refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 0,
+          clMoneyGreen);
+      end;
+    end;
+    if tempi = 5 then
+    begin
+      ADOQuery1.Close;
+      ADOQuery1.SQL.Text :=
+        'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+        + dprid + ') as pFC1, ' +
+        '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+        + dprid + ') as pFC2 ' + ' from edges where Relation ' + ' and dprid=' +
+        dprid + ' and (pcode1=''' + ADOQuery2.FieldByName('pcode').AsString +
+        ''' or pcode2=''' + ADOQuery2.FieldByName('pcode').AsString + ''')';
+      temps := '1234';
+      ADOQuery1.Open;
+      ADOQuery1.First;
+      while not ADOQuery1.Eof do
+      begin
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC1').AsString, '');
+        temps := temps.Replace(ADOQuery1.FieldByName('pFC2').AsString, '');
+        ADOQuery1.Next;
+      end;
+      if temps = '' then
+      begin
+        // 5环肯普链树   必定121234
+        // showmessage('5环肯普链树   必定121234');
+        showmessage('5环肯普链树');
+        isOK := 0;
+
+        Tcolor5pCode[0] := ADOQuery2.FieldByName('pcode').AsString;
+        PPcode5ColorIndex[0] := 0;
+        // refreshoneP(inttostr(0), Tcolor4pCode[0], 3000, clgreen);
+        refreshoneP(inttostr(0), Tcolor5pCode[0], 0, clOlive);
+        // ('P54', 'P55', 'P18', 'P17', 'P99')
+        // 终于自建了一个点线状数据测试了，可能不符合现实世界的片状地图。测试点线状地图，只为测试肯普链用，结果也不知有没解。
+        ADOQuery1.First;
+        colorindex := 0;
+        while not ADOQuery1.Eof do
+        begin
+          colorindex := colorindex + 1;
+          // for colorindex := 1 to 5 do
+          begin
+            if ADOQuery1.FieldByName('pcode1').AsString <> Tcolor5pCode[0] then
+            begin
+              Tcolor5pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode1').AsString;
+              PPcode5ColorIndex[colorindex] := ADOQuery1.FieldByName('pFC1')
+                .AsInteger;
+              // break;
+            end;
+            if ADOQuery1.FieldByName('pcode2').AsString <> Tcolor5pCode[0] then
+            begin
+              Tcolor5pCode[colorindex] :=
+                ADOQuery1.FieldByName('pcode2').AsString;
+              PPcode5ColorIndex[colorindex] := ADOQuery1.FieldByName('pFC2')
+                .AsInteger;
+              // break;
+            end;
+          end;
+          ADOQuery1.Next;
+        end; // 以上为Tcolor4pCode[i]赋值
+        // 数据正常下，不是普遍无规律的  14,3,4,13,42
+        isHaveSameColor := False;
+        // C1248C1111 备份字段用也
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set C1248C1111=FC where  dprid=' +
+          dprid + ' ';
+        adotemp.ExecSQL;
+        refreshoneP(inttostr(PPcode5ColorIndex[1]), Tcolor5pCode[1], 0, cllime);
+        refreshoneP(inttostr(PPcode5ColorIndex[2]), Tcolor5pCode[2], 0,
+          clFuchsia);
+        refreshoneP(inttostr(PPcode5ColorIndex[3]), Tcolor5pCode[3], 0,
+          clyellow);
+        refreshoneP(inttostr(PPcode5ColorIndex[4]), Tcolor5pCode[4], 0,
+          clskyblue);
+        refreshoneP(inttostr(PPcode5ColorIndex[5]), Tcolor5pCode[5], 0,
+          clsilver);
+        // looktime(10000);
+        // looktime(-1);
+        /// ///////////////////////////////////////////////////////
+        self.savetoLabelcaption;
+        // colorindex   0  3  4  1  2  4    12123
+        for p1 := 1 to 5 do
+          for p2 := (p1 + 1) to 5 do
+            if (PPcode5ColorIndex[p1] = PPcode5ColorIndex[p2]) then
+            begin
+              if (p2 = (p1 + 2)) then
+              begin
+                Abacd_A := Tcolor5pCode[p1];
+                Abacd_Aa := Tcolor5pCode[p2];
+                Abacd_b := Tcolor5pCode[p1 + 1];
+                Abacd_c := Tcolor5pCode[(p2 + 1) mod 5];
+                Abacd_d := Tcolor5pCode[(p2 + 2) mod 5];
+                a := p1;
+                aa := p2;
+                b := p1 + 1;
+                c := (p2 + 1) mod 5;
+                d := (p2 + 2) mod 5;
+                if c = 0 then
+                  c := 5;
+                if d = 0 then
+                  d := 5;
+                break;
+              end;
+              if (p2 = (p1 + 3)) then
+              begin
+                Abacd_Aa := Tcolor5pCode[p1];
+                Abacd_A := Tcolor5pCode[p2];
+                Abacd_b := Tcolor5pCode[(p2 + 1) mod 5];
+                Abacd_c := Tcolor5pCode[(p1 + 1) mod 5];
+                Abacd_d := Tcolor5pCode[(p1 + 2) mod 5];
+                a := p2;
+                aa := p1;
+                b := (p2 + 1) mod 5;
+                c := (p1 + 1) mod 5;
+                d := (p1 + 2) mod 5;
+                if b = 0 then
+                  b := 5;
+                if c = 0 then
+                  c := 5;
+                if d = 0 then
+                  d := 5;
+                break;
+              end;
+            end;
+        if 1 = 2 then
+        begin
+          if isTest5ChainReturnOK = 1 then
+          // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          begin
+            /// ////测试五环用
+            // 这里可以update具体颜值，以测试五环用
+            adotemp.Close;
+            adotemp.SQL.Text :=
+              'update points set FC=1,C1248C1111=1 where  pcode=''P82'' and  dprid='
+              + dprid + ' ';
+            // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          end;
+          if isTest5ChainReturnOK = 0 then
+          // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          begin
+            /// ////测试五环用
+            // 这里可以update具体颜值，以测试五环用
+            adotemp.Close;
+            adotemp.SQL.Text :=
+              'update points set FC=3,C1248C1111=3 where  pcode=''P82'' and  dprid='
+              + dprid + ' ';
+            // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            // 此P82原本为3时，多分支5环不行，如果这改成1，提示五环成功。测试用
+          end;
+        end;
+        /// /////////////////////////////////
+        Application.ProcessMessages;
+        if exitOut then
+        begin
+          break;
+          Close;
+        end;
+        Application.ProcessMessages;
+        for ijk := 1 to 4 do
+        begin
+          if ijk = 1 then
+          begin
+            p2 := b; // 原色点
+            p1 := c; // 取其余色时
+          end;
+          if ijk = 2 then
+          begin
+            p2 := c; // 原色点
+            p1 := b; // 取其余色时
+          end;
+          if ijk = 3 then
+          begin
+            p2 := b; // 原色点
+            p1 := d; // 取其余色时
+          end;
+          if ijk = 4 then
+          begin
+            p2 := d; // 原色点
+            p1 := b; // 取其余色时
+          end;
+
+          // 有一个成立就行了
+          Application.ProcessMessages;
+          if exitOut then
+          begin
+            break;
+            Close;
+          end;
+          Application.ProcessMessages;
+          // if p1 = p2 then
+          // continue;
+
+          // if not(((p2 = b) and (p1 = c)) or ((p2 = b) and (p1 = d))) then
+          // continue; // 只有两种情况可向下，这种思维阅读记忆法
+
+          orderStep := 1;
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid=' +
+            dprid + ' ';
+          // 手工调试时，将两个字段齐改才行
+          adotemp.ExecSQL;
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set C=0 where  dprid=' +
+            dprid + ' ';
+          adotemp.ExecSQL;
+          adotemp.Close;
+          self.fromLabelcaptionC(clred);
+          // Tcolor4pCode[3] := 1; // 肯普链树开始点     PPcode5ColorIndex[p2]
+          adotemp.SQL.Text := 'update points set FC=' +
+            inttostr(PPcode5ColorIndex[p2]) + ',C=1 where pcode=''' +
+            Tcolor5pCode[p1] + ''' and dprid=' + dprid + ' ';
+          adotemp.ExecSQL;
+          // adotemp.Close;
+          // adotemp.SQL.Text := 'update points set C=1 where ((pcode=''' + Tcolor4pCode[1] + ''') or (pcode=''' + Tcolor4pCode[2] + ''') or (pcode=''' + Tcolor4pCode[3] + ''') or (pcode=''' + Tcolor4pCode[4] + ''')) and dprid=' +
+          // dprid + ' ';
+          // adotemp.ExecSQL;
+          refreshoneP(inttostr(PPcode5ColorIndex[p2]), Tcolor5pCode[p1],
+            1000, clred);
+
+          // looktime(-1);
+          // if ((p1 = 4) and (p2 = 1)) then
+          // Application.ProcessMessages;
+          isHaveSameColor := False; // 开始点的邻边
+          /// //////////////////////////////////////////////////////
+          // select e.* from edges as e where e.dprid=2  and e.relation
+          // and
+          // (select count(1) from  points as p where p.dprid=2  and p.fc=3
+          // and  (p.pcode=e.pcode1 or p.pcode=pcode2) ) >0
+          // while not isHaveSameColor do
+          while not isHaveSameColor do
+          begin // 肯普链涟渏主体所在也乎
+            Application.ProcessMessages;
+            if exitOut then
+            begin
+              break;
+              Close;
+            end;
+            Application.ProcessMessages;
+            isHaveSameColor := False;
+            isOK := 0;
+            // looktime(-1);
+            ADOQuery3.Close;
+            ADOQuery3.SQL.Text :=
+              'select www.* from (select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+              + dprid + ') as pFC1, ' +
+              '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+              + dprid + ') as pFC2, ' +
+              ' (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+              + dprid + ') as pF11, ' +
+              ' (select p.F1  from points as p where p.pcode=edges.pcode2 and p.dprid='
+              + dprid + ') as pF12, ' +
+              ' (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid='
+              + dprid + ') as pC1, ' +
+              ' (select p.C  from points as p where p.pcode=edges.pcode2 and p.dprid='
+              + dprid + ') as pC2 ' + ' from edges where Relation ' +
+              ' and dprid=' + dprid +
+              ') as www where (1=1) and (pC1>0 or pC2>0) and (pF11<' +
+              inttostr(curPcount) + ' and  pF12<' + inttostr(curPcount) + ')' +
+              ' and ( pFC1=' + inttostr(PPcode5ColorIndex[p1]) + ' or pFC1=' +
+              inttostr(PPcode5ColorIndex[p2]) + ' or pFC2=' +
+              inttostr(PPcode5ColorIndex[p1]) + ' or pFC2=' +
+              inttostr(PPcode5ColorIndex[p2]) + ')';
+            ADOQuery3.Open;
+            ADOQuery3.First;
+            while not ADOQuery3.Eof do
+            begin
+              if ADOQuery3.FieldByName('pcode1').AsString = 'P3' then
+                if ADOQuery3.FieldByName('pcode2').AsString = 'P12' then
+                  Application.ProcessMessages;
+
+              if (ADOQuery3.FieldByName('pFC1').AsString = ADOQuery3.FieldByName
+                ('pFC2').AsString) then
+              begin
+
+                if (ADOQuery3.FieldByName('pC1').AsInteger > 0) then
+                  if (ADOQuery3.FieldByName('pC2').AsInteger > 0) then
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                // if 1=2 then
+                if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[1]
+                  ) or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                  [2]) or (ADOQuery3.FieldByName('pcode1')
+                  .AsString = Tcolor5pCode[3]) or
+                  (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[4])
+                  or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[5]
+                  )) and ((ADOQuery3.FieldByName('pcode2')
+                  .AsString = Tcolor5pCode[1]) or
+                  (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[2])
+                  or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[3]
+                  ) or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                  [4]) or (ADOQuery3.FieldByName('pcode2')
+                  .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                begin
+                  isHaveSameColor := True;
+                  break;
+                end;
+                if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                  if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                  if (((ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                begin
+                  orderStep := orderStep + 1;
+                  adotemp.Close;
+                  adotemp.SQL.Text := 'update points set FC=' +
+                    (inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') + ',C='
+                    + inttostr(orderStep) + ' where pcode=''' +
+                    ADOQuery3.FieldByName('pcode1').AsString + ''' and dprid=' +
+                    dprid + ' ';
+                  adotemp.ExecSQL;
+                  refreshoneP((inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                    ADOQuery3.FieldByName('pcode1').AsString, 1000, clred);
+                  // looktime(-1);
+                  // ADOQuery3.Next;
+                  // continue;
+                  // isHaveSameColor := True;
+                  isOK := isOK + 1;
+                  if ADOQuery3.FieldByName('pcode1').AsString = 'P1' then
+                    Application.ProcessMessages;
+                  break;
+                end;
+                if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                begin
+                  orderStep := orderStep + 1;
+                  adotemp.Close;
+                  adotemp.SQL.Text := 'update points set FC=' +
+                    (inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') + ',C='
+                    + inttostr(orderStep) + ' where pcode=''' +
+                    ADOQuery3.FieldByName('pcode2').AsString + ''' and dprid=' +
+                    dprid + ' ';
+                  adotemp.ExecSQL;
+                  refreshoneP((inttostr(PPcode5ColorIndex[p1]) +
+                    inttostr(PPcode5ColorIndex[p2]))
+                    .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                    ADOQuery3.FieldByName('pcode2').AsString, 1000, clred);
+                  // looktime(-1);
+                  // OQuery3.Next;
+                  // continue;
+                  // isHaveSameColor := True;
+                  isOK := isOK + 1;
+                  if ADOQuery3.FieldByName('pcode2').AsString = 'P1' then
+                    Application.ProcessMessages;
+                  break;
+                end;
+              end;
+              ADOQuery3.Next;
+            end;
+            if isHaveSameColor then
+            // if ADOQuery3.RecordCount=0 then
+            begin
+              Application.ProcessMessages;
+              break;
+            end;
+            if isOK = 0 then
+            begin
+              Application.ProcessMessages;
+              break;
+            end;
+          end;
+
+        end;
+
+        if 1 = 2 then
+          if isHaveSameColor then // 如果上面的不成
+          begin
+            /// /////////////////////////////////
+            p2 := b; // 原色点
+            p1 := d; // 取其余色时
+            // 有一个成立就行了
+            Application.ProcessMessages;
+            if exitOut then
+            begin
+              break;
+              Close;
+            end;
+            Application.ProcessMessages;
+            // if p1 = p2 then
+            // continue;
+
+            // if not(((p2 = b) and (p1 = c)) or ((p2 = b) and (p1 = d))) then
+            // continue; // 只有两种情况可向下，这种思维阅读记忆法
+
+            orderStep := 1;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid='
+              + dprid + ' ';
+            // 手工调试时，将两个字段齐改才行
+            adotemp.ExecSQL;
+            adotemp.Close;
+            adotemp.SQL.Text := 'update points set C=0 where  dprid=' +
+              dprid + ' ';
+            adotemp.ExecSQL;
+            adotemp.Close;
+            self.fromLabelcaptionC(clred);
+            // Tcolor4pCode[3] := 1; // 肯普链树开始点     PPcode5ColorIndex[p2]
+            adotemp.SQL.Text := 'update points set FC=' +
+              inttostr(PPcode5ColorIndex[p2]) + ',C=1 where pcode=''' +
+              Tcolor5pCode[p1] + ''' and dprid=' + dprid + ' ';
+            adotemp.ExecSQL;
+            // adotemp.Close;
+            // adotemp.SQL.Text := 'update points set C=1 where ((pcode=''' + Tcolor4pCode[1] + ''') or (pcode=''' + Tcolor4pCode[2] + ''') or (pcode=''' + Tcolor4pCode[3] + ''') or (pcode=''' + Tcolor4pCode[4] + ''')) and dprid=' +
+            // dprid + ' ';
+            // adotemp.ExecSQL;
+            refreshoneP(inttostr(PPcode5ColorIndex[p2]), Tcolor5pCode[p1],
+              1000, clred);
+
+            // looktime(-1);
+            // if ((p1 = 4) and (p2 = 1)) then
+            // Application.ProcessMessages;
+            isHaveSameColor := False; // 开始点的邻边
+            /// //////////////////////////////////////////////////////
+            // select e.* from edges as e where e.dprid=2  and e.relation
+            // and
+            // (select count(1) from  points as p where p.dprid=2  and p.fc=3
+            // and  (p.pcode=e.pcode1 or p.pcode=pcode2) ) >0
+            // while not isHaveSameColor do
+            while not isHaveSameColor do
+            begin // 肯普链涟渏主体所在也乎
+              Application.ProcessMessages;
+              if exitOut then
+              begin
+                break;
+                Close;
+              end;
+              Application.ProcessMessages;
+              isHaveSameColor := False;
+              isOK := 0;
+              // looktime(-1);
+              ADOQuery3.Close;
+              ADOQuery3.SQL.Text :=
+                'select www.* from (select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pFC1, ' +
+                '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+                + dprid + ') as pFC2, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pF11, ' +
+                ' (select p.F1  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pF12, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode1 and p.dprid='
+                + dprid + ') as pC1, ' +
+                ' (select p.C  from points as p where p.pcode=edges.pcode2 and p.dprid='
+                + dprid + ') as pC2 ' + ' from edges where Relation ' +
+                ' and dprid=' + dprid +
+                ') as www where (1=1) and (pC1>0 or pC2>0) and (pF11<' +
+                inttostr(curPcount) + ' and  pF12<' + inttostr(curPcount) + ')'
+                + ' and ( pFC1=' + inttostr(PPcode5ColorIndex[p1]) + ' or pFC1='
+                + inttostr(PPcode5ColorIndex[p2]) + ' or pFC2=' +
+                inttostr(PPcode5ColorIndex[p1]) + ' or pFC2=' +
+                inttostr(PPcode5ColorIndex[p2]) + ')';
+              ADOQuery3.Open;
+              ADOQuery3.First;
+              while not ADOQuery3.Eof do
+              begin
+                if ADOQuery3.FieldByName('pcode1').AsString = 'P3' then
+                  if ADOQuery3.FieldByName('pcode2').AsString = 'P12' then
+                    Application.ProcessMessages;
+
+                if (ADOQuery3.FieldByName('pFC1')
+                  .AsString = ADOQuery3.FieldByName('pFC2').AsString) then
+                begin
+
+                  if (ADOQuery3.FieldByName('pC1').AsInteger > 0) then
+                    if (ADOQuery3.FieldByName('pC2').AsInteger > 0) then
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  // if 1=2 then
+                  if (((ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [1]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode1')
+                    .AsString = Tcolor5pCode[5])) and
+                    ((ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[1]
+                    ) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[2]) or
+                    (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode[3])
+                    or (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                    [4]) or (ADOQuery3.FieldByName('pcode2')
+                    .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                  begin
+                    isHaveSameColor := True;
+                    break;
+                  end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                    if (((ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor5pCode[1]) or
+                      (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                      [2]) or (ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor5pCode[3]) or
+                      (ADOQuery3.FieldByName('pcode1').AsString = Tcolor5pCode
+                      [4]) or (ADOQuery3.FieldByName('pcode1')
+                      .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                    if (((ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor5pCode[1]) or
+                      (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                      [2]) or (ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor5pCode[3]) or
+                      (ADOQuery3.FieldByName('pcode2').AsString = Tcolor5pCode
+                      [4]) or (ADOQuery3.FieldByName('pcode2')
+                      .AsString = Tcolor5pCode[5]))) then // 是四环的边时
+                    begin
+                      isHaveSameColor := True;
+                      break;
+                    end;
+                  if (ADOQuery3.FieldByName('pC1').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode1').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP
+                      ((inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode1').AsString, 1000, clred);
+                    // looktime(-1);
+                    // ADOQuery3.Next;
+                    // continue;
+                    // isHaveSameColor := True;
+                    isOK := isOK + 1;
+                    if ADOQuery3.FieldByName('pcode1').AsString = 'P1' then
+                      Application.ProcessMessages;
+                    break;
+                  end;
+                  if (ADOQuery3.FieldByName('pC2').AsInteger = 0) then
+                  begin
+                    orderStep := orderStep + 1;
+                    adotemp.Close;
+                    adotemp.SQL.Text := 'update points set FC=' +
+                      (inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, '') +
+                      ',C=' + inttostr(orderStep) + ' where pcode=''' +
+                      ADOQuery3.FieldByName('pcode2').AsString + ''' and dprid='
+                      + dprid + ' ';
+                    adotemp.ExecSQL;
+                    refreshoneP
+                      ((inttostr(PPcode5ColorIndex[p1]) +
+                      inttostr(PPcode5ColorIndex[p2]))
+                      .Replace(ADOQuery3.FieldByName('pFC1').AsString, ''),
+                      ADOQuery3.FieldByName('pcode2').AsString, 1000, clred);
+                    // looktime(-1);
+                    // OQuery3.Next;
+                    // continue;
+                    // isHaveSameColor := True;
+                    isOK := isOK + 1;
+                    if ADOQuery3.FieldByName('pcode2').AsString = 'P1' then
+                      Application.ProcessMessages;
+                    break;
+                  end;
+                end;
+                ADOQuery3.Next;
+              end;
+              if isHaveSameColor then
+              // if ADOQuery3.RecordCount=0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+              if isOK = 0 then
+              begin
+                Application.ProcessMessages;
+                break;
+              end;
+            end;
+
+          end; // 如果上面的不成
+
+        if not isHaveSameColor then
+        begin
+          // adotemp.Close;
+          // adotemp.SQL.Text :=
+          // 'update points set FC=C1248C1111 where  dprid=' + dprid + ' ';
+          // adotemp.ExecSQL;
+          adotemp.Close;
+          // Tcolor4pCode[3] := 1; // 肯普链树中心点
+          adotemp.SQL.Text := 'update points set FC=' +
+            inttostr(PPcode5ColorIndex[p1]) + ' where pcode=''' + Tcolor5pCode
+            [0] + ''' and dprid=' + dprid + ' ';
+          adotemp.ExecSQL;
+          refreshoneP(inttostr(PPcode5ColorIndex[p1]), Tcolor5pCode[0],
+            1000, clred);
+          self.savetoLabelcaption;
+
+        end;
+
+        self.fromLabelcaption;
+        if not isHaveSameColor then
+          showmessage('5环肯普链树，这个已经可解了')
+        else
+        begin
+          showmessage('5环肯普链树，仍然不可解');
+          adotemp.Close;
+          adotemp.SQL.Text := 'update points set FC=C1248C1111 where  dprid=' +
+            dprid + ' ';
+          // 手工调试时，将两个字段齐改才行
+          adotemp.ExecSQL;
+          break;
+        end;
+        // 4环肯普链树  必定1234  ,1243,1347,1324,1423,1432,每点变一次，不是仅变两次
+
+        // 5环肯普链树   必定121234
+      end
+      else
+      begin
+        adotemp.Close;
+        adotemp.SQL.Text := 'update points set FC=' + temps[1] + ' where F1=' +
+          inttostr(curPcount) + ' and dprid=' + dprid + ' ';
+        adotemp.ExecSQL;
+        // refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 1000);
+        refreshoneP(temps[1], ADOQuery2.FieldByName('pcode').AsString, 0,
+          clMoneyGreen);
+      end;
+    end;
+  end;
+
+  refreshhClick(nil);
+  AutorefreshALLP;
+  showmessage('ok');
+end;
+
+
+
+
+
+procedure TFC.RzButton2Click(Sender: TObject);
+var
+  FC1, FC2, ok: Integer;
+  pcode1, pcode2: string;
+begin
+  ok := 0;
+  ADOQuery1.Close;
+  ADOQuery1.SQL.Text :=
+    'select edges.*,(select p.FC  from points as p where p.pcode=edges.pcode1 and p.dprid='
+    + dprid + ') as pFC1, ' +
+    '  (select p.FC  from points as p where p.pcode=edges.pcode2 and  p.dprid='
+    + dprid + ') as pFC2 ' + ' from edges where Relation ' +
+    ' and dprid=' + dprid;
+
+  ADOQuery1.Open;
+  ADOQuery1.First;
+  while not ADOQuery1.Eof do
+  begin
+    FC1 := ADOQuery1.FieldByName('pFC1').AsInteger;
+    FC2 := ADOQuery1.FieldByName('pFC2').AsInteger;
+    pcode1 := ADOQuery1.FieldByName('pcode1').AsString;
+    pcode2 := ADOQuery1.FieldByName('pcode2').AsString;
+    if (FC1 = FC2) then
+    begin
+      ok := ok + 1;
+      showmessage(pcode1 + ' 与 ' + pcode2 + ' 相邻有同色同为' + inttostr(FC1) + '，不行');
+    end;
+    if (FC1 * FC2 = 0) then
+    begin
+      ok := ok + 1;
+      showmessage(pcode1 + ' 与 ' + pcode2 + ' 有一个颜值为0，不行');
+    end;
+    ADOQuery1.Next;
+  end;
+  if (ok = 0) then
+    showmessage('相邻全不同色，行')
+  else
+    showmessage('相邻有同色或颜值为0，不行');
+
+end;
