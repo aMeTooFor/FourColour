@@ -3,6 +3,9 @@
 
 我用ubuntu20和lazarus3.0和sqlite3，开发两个小软件，四色定理染色算法小软件，和，3N+1猜想小软件，后者没有解决，只是作为兴趣研究下，
 测试可用，但未有完善，供需要的人用下看下。
+
+https://blog.csdn.net/e271828/article/details/155442585?spm=1001.2014.3001.5501
+
 https://github.com/aMeTooFor/FourColour
 
 
@@ -18,8 +21,6 @@ sudo apt-get install libsqlite3-dev
 开发者：亥藏壬甲/海藏(路)人甲/海量路人甲(老人家)/人甲（人中第甲）/㤥藏人甲(银鸭)/任压（任劳任怨）。。。。。。2025－8－8
 
 
-
-
 四色(定理/猜想)染色算法小软件Version1.11 2025.6.26  开发者：孝感动天/卧冰求鲤 
 
 开发者：路人甲/打酱油 
@@ -31,3 +32,6 @@ sudo apt-get install libsqlite3-dev
 先安装sudo apt-get install libsqlite3-dev才可以在ubuntu20下运行。
 如果是sudo apt-get install sqlite3 不可以运行的。
 开发环境：ubuntu20 + lazarus3.0 + sqlite3
+
+https://blog.csdn.net/e271828/article/details/155442585?spm=1001.2014.3001.5501
+
